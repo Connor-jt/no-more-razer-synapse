@@ -125,49 +125,35 @@ void contact_device(HANDLE handle) {
 
 
 
-int main()
-{
-    printf("hello world");
+int try_load_devices(){
+    HDEVINFO hDevInfo = SetupDiGetClassDevsW(&GUID_DEVINTERFACE_HID, 0, 0, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT);
+    if (hDevInfo == INVALID_HANDLE_VALUE) 
+        return GetLastError();
 
-    // /////// // -------------------------------------------------------------
-    // TEST 1 //
-    // ///// //
-    //SetupDiGetClassDevs();
-    //SetupDiEnumDeviceInfo();
-    //SetupDiGetDeviceRegistryProperty(); // SPDRP_LOCATION_INFORMATION 
-    //CM_Get_Device_ID();
-    // ----------------------------------------------------------------------
+    // iterate list indexes until index failure
+    int device_index = 0;
+    while (device_index++, true) {
 
-    // /////// // ----------------------------------------------------------------------
-    // TEST 2 //
-    // ///// //
-    // Step 1: Get a device information set (e.g., for USB devices)
-    //HDEVINFO hDevInfo = SetupDiGetClassDevs(&GUID_DEVINTERFACE_HID, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
-    //if (hDevInfo == INVALID_HANDLE_VALUE) {
-    //    // Handle error
-    //    return 1;}
-    //// Step 2: Enumerate interfaces and get the desired interface data
-    //SP_DEVICE_INTERFACE_DATA interfaceData = {};
-    //// ... (enumerate interfaces and populate interfaceData)
+        SP_DEVICE_INTERFACE_DATA interfaceData = {};
+        interfaceData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
+        if (!SetupDiEnumDeviceInterfaces(hDevInfo, 0, &GUID_DEVINTERFACE_HID, device_index, &interfaceData))
+            break; //return GetLastError(); // break if false, as that means we've reached the end of the list
 
-    //// Step 3: Determine required buffer size
-    //DWORD requiredSize = 0;
-    //SetupDiGetDeviceInterfaceDetail(hDevInfo, &interfaceData, NULL, 0, &requiredSize, NULL);
+        SP_DEVINFO_DATA devinfo_data = {};
+        devinfo_data.cbSize = sizeof(SP_DEVINFO_DATA);
+        if (!SetupDiEnumDeviceInfo(hDevInfo, device_index, &devinfo_data))
+        { std::cout << "\nSDEDI: " << GetLastError(); continue; } //
 
-    //// Step 4: Allocate memory and retrieve device interface detail
-    //SP_DEVICE_INTERFACE_DETAIL_DATA* detailData = (SP_DEVICE_INTERFACE_DETAIL_DATA*)malloc(requiredSize);
-    //detailData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
-    //if (!SetupDiGetDeviceInterfaceDetail(hDevInfo, &interfaceData, detailData, requiredSize, NULL, NULL)) {
-    //    // Handle error
-    //    free(detailData);
-    //    SetupDiDestroyDeviceInfoList(hDevInfo);
-    //    return 1;
-    //}
+        char __interface_detail_data[0x20e] = {0}; // number provided by razer via razer synapse 3 decompiled code
+        PSP_DEVICE_INTERFACE_DETAIL_DATA_W interface_detail_data = (PSP_DEVICE_INTERFACE_DETAIL_DATA_W)&__interface_detail_data;
+        interface_detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA); // razer says the answer is 6, although that is unlikely
+        if (!SetupDiGetDeviceInterfaceDetailW(hDevInfo, &interfaceData, interface_detail_data, 0x20e, 0, 0))
+        { std::cout << "\nSDGDIDW_full: " << GetLastError(); continue; } //
 
-    //// Step 5: Access the device path (detailData->DevicePath)
-    //// Clean up
-    //free(detailData);
-    //SetupDiDestroyDeviceInfoList(hDevInfo);
+        // and then if the conditions are correct, we map the device
+        char breakpoint_test = 'n';
+    }
+    return 0;
 
     // //////////////////////////// //
     // PART 2 OF THE 2ND TEST !!!! //
@@ -204,33 +190,14 @@ int main()
     //CloseHandle(device_handle);
     // -------------------------------------------------------------------------------------
 
-    // /////// // -------------------------------------------------------------------------
-    // TEST 3 // 
-    // ///// //
-    // 
-    auto device_test = LoadDevice(L"\\\\?\\hid#vid_1532&pid_0241&mi_01&col01#7&31628aa2&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}\\kbd");
-    // iterate all things
-    DWORD bytes_returned = 0;
-    int succeeded = 0;
-    int start = 0x88883000;
-    int max = 0x512;
-    for (int i = start; i < max+start; i++) {
-        if (SendDataToDevice(device_test, i, 0, 0, 0, 0, &bytes_returned, 0)) {
-            succeeded++;
-            //std::cout << "\n failure on: " << (start+i);
-        }
-    }
-    // report failure count
-    std::cout << "\n" << succeeded << "/" << max << " attempts succeeded";
 
-
-    contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_0241&mi_00#7&89cfb0b&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}\\kbd")); // keyboard
-    contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_0241&mi_02#7&1e326e64&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}")); // keyboard
-    contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_0241&mi_01&col01#7&31628aa2&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}\\kbd")); // keyboard
-    contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_0241&mi_01&col02#7&31628aa2&0&0001#{4d1e55b2-f16f-11cf-88cb-001111000030}")); // keyboard
-    contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_0241&mi_01&col03#7&31628aa2&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}")); // keyboard
-    contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_0241&mi_01&col04#7&31628aa2&0&0003#{4d1e55b2-f16f-11cf-88cb-001111000030}")); // keyboard
-    contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_0241&mi_01&col05#7&31628aa2&0&0004#{4d1e55b2-f16f-11cf-88cb-001111000030}")); // keyboard
+    //contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_0241&mi_00#7&89cfb0b&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}\\kbd")); // keyboard
+    //contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_0241&mi_02#7&1e326e64&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}")); // keyboard
+    //contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_0241&mi_01&col01#7&31628aa2&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}\\kbd")); // keyboard
+    //contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_0241&mi_01&col02#7&31628aa2&0&0001#{4d1e55b2-f16f-11cf-88cb-001111000030}")); // keyboard
+    //contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_0241&mi_01&col03#7&31628aa2&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}")); // keyboard
+    //contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_0241&mi_01&col04#7&31628aa2&0&0003#{4d1e55b2-f16f-11cf-88cb-001111000030}")); // keyboard
+    //contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_0241&mi_01&col05#7&31628aa2&0&0004#{4d1e55b2-f16f-11cf-88cb-001111000030}")); // keyboard
     /*contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_022b&mi_00#7&3a630f46&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}\\kbd"));
     contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_022b&mi_01&col02#7&2a901eea&0&0001#{4d1e55b2-f16f-11cf-88cb-001111000030}"));
     contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_022b&mi_01&col03#7&2a901eea&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}"));
@@ -247,5 +214,10 @@ int main()
 
 }
 
+int main(){
+    printf("hello world\n");
+    std::cout << "reponse code: " << try_load_devices() << "\n";
+    std::cout << "ending process...\n";
+}
 
 
