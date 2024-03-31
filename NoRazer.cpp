@@ -148,9 +148,12 @@ int try_load_devices(){
         PSP_DEVICE_INTERFACE_DETAIL_DATA_W interface_detail_data = (PSP_DEVICE_INTERFACE_DETAIL_DATA_W)&__interface_detail_data;
         interface_detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA); // razer says the answer is 6, although that is unlikely
         if (!SetupDiGetDeviceInterfaceDetailW(hDevInfo, &interfaceData, interface_detail_data, 0x20e, 0, 0))
-        { std::cout << "\nSDGDIDW_full: " << GetLastError(); continue; } //
+        { std::cout << "\nSDGDIDW: " << GetLastError(); continue; } //
 
         // and then if the conditions are correct, we map the device
+        // check for razer vendor id
+        // dont worry about product id
+            
         char breakpoint_test = 'n';
     }
     return 0;
