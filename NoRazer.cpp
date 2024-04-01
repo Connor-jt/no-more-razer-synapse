@@ -18,31 +18,19 @@
 
 
 
-
 #include <errhandlingapi.h>
 #include <FileApi.h>
 #include <ioapiset.h>
 #include <synchapi.h>
-extern "C"
-{
-#include <hidsdi.h> // broken???
-}
+
+#pragma comment (lib, "hid.lib")
+#include <hidsdi.h>
+#include <hidpi.h> 
 
 
-HANDLE LoadDevice(LPCWSTR device_identifier){
-    HANDLE device_handle = CreateFileW(device_identifier, 0, 3, (LPSECURITY_ATTRIBUTES)0x0, 3, 0x40000000, (HANDLE)0x0);
-   
-    if (device_handle != (HANDLE)-1) {
-        HIDP_CAPS caps = {};
-        PHIDP_PREPARSED_DATA data = nullptr;
-        // linkage error, thanks john microsoft
-        //if (HidD_GetPreparsedData(device_handle, &data)) {
-        //    HidP_GetCaps(data, &caps);
-        //    HidD_FreePreparsedData(data);
-        //}
-    }
-    return device_handle;
-}
+#include <vector>
+#include <string>
+using namespace std;
 
  
 bool SendDataToDevice(HANDLE device, DWORD dwIoControlCode, LPVOID lpInBuffer, DWORD nInBufferSize, LPVOID lpOutBuffer, DWORD nOutBufferSize, DWORD* bytes_returned, LPOVERLAPPED lpOverlapped){
@@ -76,7 +64,7 @@ bool SendDataToDevice(HANDLE device, DWORD dwIoControlCode, LPVOID lpInBuffer, D
         }
         
         
-        // 'Overlapped I/O operation is in progress'
+        // error is 'Overlapped I/O operation is in progress'
 
         // seems like this is all unimportant & could just be skipped !!!
         DVar2 = WaitForSingleObject(thread_event, 2000);
@@ -94,7 +82,7 @@ bool SendDataToDevice(HANDLE device, DWORD dwIoControlCode, LPVOID lpInBuffer, D
     }
     else {
     LAB_1003a94b:
-        std::cout << "\nsuccess";
+        cout << "\nsuccess";
         if (bytes_returned != (DWORD*)0x0)
             *bytes_returned = lpBytesReturned;
     }
@@ -119,9 +107,70 @@ void contact_device(HANDLE handle) {
 
 
 
-
-
-
+vector<wstring> separate_device_descriptor(const wstring source) {
+    vector<wstring> result = {};
+    int section_index = 0;
+    int section_chars_begin_index = 0;
+    for (int index = 0; index < source.size(); index++) {
+        wchar_t current_char = source[index];
+        if (current_char == '&') {
+            result.push_back(source.substr(section_chars_begin_index, index-section_chars_begin_index));
+            section_chars_begin_index = index + 1;
+            section_index++;
+    }}
+    return result;
+}
+struct device_path_data {
+    int vid, pid, mi = 0;
+    vector<int> col = {};
+    int hwid1, hwid2, hwid3, hwid4 = 0;
+    wstring class_guid;
+};
+device_path_data digest_device_path(LPCWSTR device_path) {
+    device_path_data result = {};
+    // im not a fan of the excessive substringing to get all this going, but it keeps it concise
+    wstring path_descriptor  = L"";
+    wstring device_ids = L"";
+    wstring hardware_ids = L"";
+    // iterate through device path string and map each section
+    {   int descriptor_index = 0;
+        int last_descriptor_index = 0;
+        for (int index = 0;;index++) {
+            wchar_t current_char = device_path[index];
+            if (current_char == '#') {
+                switch (descriptor_index) {
+                case 0: path_descriptor   = wstring(device_path+last_descriptor_index, index-last_descriptor_index); break;
+                case 1: device_ids        = wstring(device_path+last_descriptor_index, index-last_descriptor_index); break;
+                case 2: hardware_ids      = wstring(device_path+last_descriptor_index, index-last_descriptor_index); break;
+                case 3: result.class_guid = wstring(device_path+last_descriptor_index, index-last_descriptor_index); break;}
+                last_descriptor_index = index + 1;
+                descriptor_index++;
+            } else if (current_char == '\0') break;
+    }}
+    // iterate through device ids and map the data
+    {   vector<wstring> dev_ids = separate_device_descriptor(device_ids);
+        for (int i = 0; i < dev_ids.size(); i++) {
+            wstring curr_string = dev_ids[i];
+            if (result.vid == 0 && curr_string.starts_with(L"vid_"))
+                result.vid = stoi(curr_string.substr(4), nullptr, 16);
+            else if (result.pid == 0 && curr_string.starts_with(L"pid_"))
+                result.pid = stoi(curr_string.substr(4), nullptr, 16);
+            else if (result.mi == 0 && curr_string.starts_with(L"mi_"))
+                result.mi = stoi(curr_string.substr(3), nullptr, 16);
+            else if (curr_string.starts_with(L"col"))
+                result.col.push_back(stoi(curr_string.substr(3), nullptr, 16));
+    }}
+    // iterate through hardware ids and map them
+    {   vector<wstring> physical_ids = separate_device_descriptor(hardware_ids);
+        for (int i = 0; i < physical_ids.size(); i++) {
+            switch (i) {
+            case 0: result.hwid1 = stoi(physical_ids[i], nullptr, 16); break;
+            case 1: result.hwid2 = stoi(physical_ids[i], nullptr, 16); break;
+            case 2: result.hwid3 = stoi(physical_ids[i], nullptr, 16); break;
+            case 3: result.hwid4 = stoi(physical_ids[i], nullptr, 16); break;}
+    }}
+    return result;
+}
 
 
 
@@ -130,31 +179,50 @@ int try_load_devices(){
     if (hDevInfo == INVALID_HANDLE_VALUE) 
         return GetLastError();
 
-    // iterate list indexes until index failure
+    // iterate vector indexes until index failure
     int device_index = 0;
     while (device_index++, true) {
 
         SP_DEVICE_INTERFACE_DATA interfaceData = {};
         interfaceData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
         if (!SetupDiEnumDeviceInterfaces(hDevInfo, 0, &GUID_DEVINTERFACE_HID, device_index, &interfaceData))
-            break; //return GetLastError(); // break if false, as that means we've reached the end of the list
+            break; // this means we've reached the end of the vector
 
         SP_DEVINFO_DATA devinfo_data = {};
         devinfo_data.cbSize = sizeof(SP_DEVINFO_DATA);
         if (!SetupDiEnumDeviceInfo(hDevInfo, device_index, &devinfo_data))
-        { std::cout << "\nSDEDI: " << GetLastError(); continue; } //
+        { cout << "\nSDEDI: " << GetLastError(); continue; }
 
         char __interface_detail_data[0x20e] = {0}; // number provided by razer via razer synapse 3 decompiled code
         PSP_DEVICE_INTERFACE_DETAIL_DATA_W interface_detail_data = (PSP_DEVICE_INTERFACE_DETAIL_DATA_W)&__interface_detail_data;
         interface_detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA); // razer says the answer is 6, although that is unlikely
         if (!SetupDiGetDeviceInterfaceDetailW(hDevInfo, &interfaceData, interface_detail_data, 0x20e, 0, 0))
-        { std::cout << "\nSDGDIDW: " << GetLastError(); continue; } //
+        { cout << "\nSDGDIDW: " << GetLastError(); continue; }
 
-        // and then if the conditions are correct, we map the device
-        // check for razer vendor id
-        // dont worry about product id
-            
-        char breakpoint_test = 'n';
+        // check for razer vendor id, skip any that aren't razer
+        auto interface_path_data = digest_device_path(interface_detail_data->DevicePath);
+        if (interface_path_data.vid != 0x1532 && interface_path_data.vid != 0x6e8) continue; 
+        
+
+        HANDLE device_handle = CreateFileW(interface_detail_data->DevicePath, 0, 3, (LPSECURITY_ATTRIBUTES)0x0, 3, 0x40000000, (HANDLE)0x0);
+        if (device_handle == (HANDLE)-1)
+        { cout << "\nCFW: " << GetLastError(); continue; }
+
+        HIDP_CAPS caps = {};
+        PHIDP_PREPARSED_DATA data = nullptr;
+        if (HidD_GetPreparsedData(device_handle, &data)) {
+            HidP_GetCaps(data, &caps);
+            HidD_FreePreparsedData(data);
+        }
+
+
+
+        DWORD bytes_returned = 0;
+        if (SendDataToDevice(device_handle, 0x88883140, 0, 0, 0, 0, &bytes_returned, 0))
+        {
+
+            char breakpoint_test = 0;
+        }
     }
     return 0;
 
@@ -169,7 +237,7 @@ int try_load_devices(){
     //HANDLE device_handle = CreateFileW(devicePath, 0, 3, (LPSECURITY_ATTRIBUTES)0x0, 3, 0x40000000, (HANDLE)0x0);
     ////HANDLE hDevice = CreateFile(devicePath, 0, 3, NULL, OPEN_EXISTING, 0x40000000, NULL);
     //if (device_handle == INVALID_HANDLE_VALUE) {
-    //    std::cerr << "Error opening device handle. Error code: " << GetLastError() << std::endl;
+    //    cerr << "Error opening device handle. Error code: " << GetLastError() << endl;
     //    return 1;}
 
     //// Step 2: Issue IOCTL_USB_GET_DESCRIPTOR_FROM_NODE_CONNECTION
@@ -181,14 +249,14 @@ int try_load_devices(){
     //    &bytesReturned, NULL);
 
     //if (!success) {
-    //    std::cerr << "Error retrieving descriptor. Error code: " << GetLastError() << std::endl;
+    //    cerr << "Error retrieving descriptor. Error code: " << GetLastError() << endl;
     //    CloseHandle(device_handle);
     //    return 1;}
     //// Step 3: Access the device descriptor
     ///*USB_DEVICE_DESCRIPTOR deviceDescriptor = connectionInfo.DeviceDescriptor;
-    //std::cout << "USB Device Descriptor:" << std::endl;
-    //std::cout << "Vendor ID: 0x" << std::hex << deviceDescriptor.idVendor << std::endl;
-    //std::cout << "Product ID: 0x" << std::hex << deviceDescriptor.idProduct << std::endl;*/
+    //cout << "USB Device Descriptor:" << endl;
+    //cout << "Vendor ID: 0x" << hex << deviceDescriptor.idVendor << endl;
+    //cout << "Product ID: 0x" << hex << deviceDescriptor.idProduct << endl;*/
     //// Add other relevant fields as needed
     //CloseHandle(device_handle);
     // -------------------------------------------------------------------------------------
@@ -219,8 +287,8 @@ int try_load_devices(){
 
 int main(){
     printf("hello world\n");
-    std::cout << "reponse code: " << try_load_devices() << "\n";
-    std::cout << "ending process...\n";
+    cout << "reponse code: " << try_load_devices() << "\n";
+    cout << "ending process...\n";
 }
 
 
