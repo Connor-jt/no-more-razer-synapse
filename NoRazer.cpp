@@ -3,9 +3,10 @@
 //typedef const USHORT USAGE;
 //typedef const char* LPCSTR;
 #include <windows.h>
+#include <initguid.h>
 #include <usbioctl.h>
 //#pragma comment (lib, "Hidclass.lib")
-#include <initguid.h>
+#include <usbiodef.h>
 #include <ntddstor.h>
 #include <Hidclass.h>
 
@@ -173,6 +174,50 @@ device_path_data digest_device_path(LPCWSTR device_path) {
 }
 
 
+DEFINE_DEVPROPKEY(DEVPKEY_Device_ContainerId, 0x8c7ed206, 0x3f8a, 0x4827, 0xb3, 0xab, 0xae, 0x9e, 0x1f, 0xae, 0xfc, 0x6c, 2);     // DEVPROP_TYPE_GUID
+DEFINE_DEVPROPKEY(DEVPKEY_Device_BusReportedDeviceDesc, 0x540b947e, 0x8b40, 0x45bc, 0xa8, 0xa2, 0x6a, 0x0b, 0x89, 0x4c, 0xbd, 0xa2, 4);     // DEVPROP_TYPE_STRING
+
+// 2357121542 16266 18471 // 8C7ED206 3F8A 4827
+int find_parent_usb_device(int target_vid, int target_pid, PBYTE property_buffer) {
+    HDEVINFO hDevInfo = SetupDiGetClassDevsW(&GUID_DEVINTERFACE_USB_DEVICE, 0, 0, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT);
+    if (hDevInfo == INVALID_HANDLE_VALUE)
+        return GetLastError();
+
+    int device_index = 0;
+    while (device_index++, true) {
+        SP_DEVICE_INTERFACE_DATA interfaceData = {};
+        interfaceData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
+        if (!SetupDiEnumDeviceInterfaces(hDevInfo, 0, &GUID_DEVINTERFACE_USB_DEVICE, device_index, &interfaceData))
+            break;
+
+        SP_DEVINFO_DATA devinfo_data = {};
+        devinfo_data.cbSize = sizeof(SP_DEVINFO_DATA);
+        if (!SetupDiEnumDeviceInfo(hDevInfo, device_index, &devinfo_data))
+            continue;
+
+        char __interface_detail_data[0x20e] = {0};
+        PSP_DEVICE_INTERFACE_DETAIL_DATA_W interface_detail_data = (PSP_DEVICE_INTERFACE_DETAIL_DATA_W)&__interface_detail_data;
+        interface_detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
+        if (!SetupDiGetDeviceInterfaceDetailW(hDevInfo, &interfaceData, interface_detail_data, 0x20e, 0, 0))
+            continue;
+
+        // we're looking for a deivce that has a matching vid & pid
+        auto interface_path_data = digest_device_path(interface_detail_data->DevicePath);
+        if (interface_path_data.vid != target_vid && interface_path_data.vid != target_pid)
+            continue;
+
+        DEVPROPTYPE property_type = 0;
+        DWORD required_size = 0;
+        if (!SetupDiGetDevicePropertyW(hDevInfo, &devinfo_data, &DEVPKEY_Device_BusReportedDeviceDesc, &property_type, property_buffer, 0x200, &required_size, 0))
+        {
+            // then we're supposed to do something else here, but ignore for now
+            //continue;
+        }
+
+        return 0; // success
+    }
+    return 621; // not an actual error, its just so we can track whats going on
+}
 
 int try_load_devices(){
     HDEVINFO hDevInfo = SetupDiGetClassDevsW(&GUID_DEVINTERFACE_HID, 0, 0, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT);
@@ -214,6 +259,18 @@ int try_load_devices(){
             HidP_GetCaps(data, &caps);
             HidD_FreePreparsedData(data);
         }
+
+        DEVPROPTYPE property_type = 0;
+        BYTE property_buffer[0x800] = {0};
+        DWORD required_size = 0;
+        if(!SetupDiGetDevicePropertyW(hDevInfo, &devinfo_data, &DEVPKEY_Device_ContainerId, &property_type, property_buffer, 0x800, &required_size, 0))
+        { cout << "\nSDGDPW: " << GetLastError(); continue; }
+
+        char out_guidstring[0x2000] = {0};
+        int test = StringFromGUID2(*(GUID*)&property_buffer, (LPOLESTR)&out_guidstring, 0x1000);
+
+        BYTE parent_property_buffer[0x200] = {0};
+        int parent_result = find_parent_usb_device(interface_path_data.vid, interface_path_data.pid, parent_property_buffer);
 
 
 
