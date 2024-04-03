@@ -33,7 +33,26 @@
 #include <string>
 using namespace std;
 
- 
+
+#pragma pack(push, 1)
+struct razer_rgb_data {
+    struct RGB {
+        unsigned char R;
+        unsigned char B;
+        unsigned char G;};
+    unsigned short unk0x00      =  0;
+    unsigned short unk0x02      = 31;
+    unsigned short unk0x04      =  0;
+    unsigned char  unk0x06[3]   = {0x47,0x0F,0x03};
+    unsigned short unk0x09      =  0;
+    unsigned short column_index =  0; // USER SET
+    unsigned short key_count    =  0; // USER SET
+    unsigned short unk0x0F      =  0;
+    RGB            keys[24];
+    unsigned short unk0x59      =  0; // seems kinda like a checksum of sorts
+};
+#pragma pack(pop)
+
 bool SendDataToDevice(HANDLE device, DWORD dwIoControlCode, LPVOID lpInBuffer, DWORD nInBufferSize, LPVOID lpOutBuffer, DWORD nOutBufferSize, DWORD* bytes_returned, LPOVERLAPPED lpOverlapped){
 
     BOOL device_output;
@@ -83,25 +102,11 @@ bool SendDataToDevice(HANDLE device, DWORD dwIoControlCode, LPVOID lpInBuffer, D
     }
     else {
     LAB_1003a94b:
-        cout << "\nsuccess";
         if (bytes_returned != (DWORD*)0x0)
             *bytes_returned = lpBytesReturned;
     }
     return true;
 }
-
-void contact_device(HANDLE handle) {
-    if (handle == 0 || handle == (HANDLE)-1)
-        return;
-
-    char data[] = { 0x00, 0x00, 0x1F, 0x00, 0x00, 0x00, 0x47, 0x0F, 0x03, 0x00, 0x00, 0x02, 0x00, 0x15, 0x00, 0x00, 0x00, 0x00, 0xE1, 0x00, 0x64, 0x00, 0x00, 0x0A, 0x00, 0x01, 0x00, 0xC9, 0x00, 0x00, 0xC0, 0x00, 0x00, 0xB8, 0x00, 0x00, 0xB0, 0x00, 0x00, 0xA7, 0x00, 0x00, 0x9F, 0x00, 0x00, 0x97, 0x00, 0x00, 0x8F, 0x00, 0x00, 0x86, 0x00, 0x00, 0x7E, 0x00, 0x00, 0x76, 0x00, 0x00, 0x65, 0x00, 0x00, 0x5D, 0x00, 0x00, 0x55, 0x00, 0x00, 0x4C, 0x00, 0x00, 0x44, 0x00, 0x00, 0x3C, 0x00, 0x00, 0x33, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x17, 0x00 };
-    
-    DWORD bytes_returned = 0;
-    SendDataToDevice(handle, 0x88883140, 0, 0, 0, 0, &bytes_returned, 0);
-    SendDataToDevice(handle, 0x88883010, &data, sizeof(data), 0, 0, &bytes_returned, 0);
-    SendDataToDevice(handle, 0x88883140, 0, 0, 0, 0, &bytes_returned, 0);
-}
-
 
 
 
@@ -176,8 +181,6 @@ device_path_data digest_device_path(LPCWSTR device_path) {
 
 DEFINE_DEVPROPKEY(DEVPKEY_Device_ContainerId, 0x8c7ed206, 0x3f8a, 0x4827, 0xb3, 0xab, 0xae, 0x9e, 0x1f, 0xae, 0xfc, 0x6c, 2);     // DEVPROP_TYPE_GUID
 DEFINE_DEVPROPKEY(DEVPKEY_Device_BusReportedDeviceDesc, 0x540b947e, 0x8b40, 0x45bc, 0xa8, 0xa2, 0x6a, 0x0b, 0x89, 0x4c, 0xbd, 0xa2, 4);     // DEVPROP_TYPE_STRING
-
-// 2357121542 16266 18471 // 8C7ED206 3F8A 4827
 int find_parent_usb_device(int target_vid, int target_pid, PBYTE property_buffer) {
     HDEVINFO hDevInfo = SetupDiGetClassDevsW(&GUID_DEVINTERFACE_USB_DEVICE, 0, 0, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT);
     if (hDevInfo == INVALID_HANDLE_VALUE)
@@ -220,6 +223,43 @@ int find_parent_usb_device(int target_vid, int target_pid, PBYTE property_buffer
 }
 
 int try_load_devices(){
+    
+    HANDLE device_handle = CreateFileW(L"\\\\?\\rzcontrol#vid_1532&pid_0241&mi_00#8&288536a0&0#{e3be005d-d130-4910-88ff-09ae02f680e9}", 0, 3, (LPSECURITY_ATTRIBUTES)0x0, 3, 0x40000000, (HANDLE)0x0);
+    if (device_handle == (HANDLE)-1)
+    {
+        char breakpoint_test = 0;
+    }
+
+    unsigned char color_index = 0;
+    razer_rgb_data rgb_data_obj = {};
+    rgb_data_obj.column_index = 2;
+    rgb_data_obj.key_count = 21;
+    for (;;) {
+        // color in keys
+        for (int i = 0; i < rgb_data_obj.key_count; i++) {
+            rgb_data_obj.keys[i].R = color_index;
+            rgb_data_obj.keys[i].G = 0;
+            rgb_data_obj.keys[i].B = 0;
+            color_index += 2; // naturally overflows back to 0
+        }
+
+        DWORD bytes_returned = 0;
+        SendDataToDevice(device_handle, 0x88883140, 0, 0, 0, 0, &bytes_returned, 0);
+        SendDataToDevice(device_handle, 0x88883010, &rgb_data_obj, sizeof(rgb_data_obj), 0, 0, &bytes_returned, 0);
+
+        Sleep(300);
+    }
+
+    return 0;
+    /*DWORD bytes_returned = 0;
+    if (SendDataToDevice(device_handle, 0x88883140, 0, 0, 0, 0, &bytes_returned, 0))
+    {
+
+        char breakpoint_test = 0;
+    }*/
+
+
+
     HDEVINFO hDevInfo = SetupDiGetClassDevsW(&GUID_DEVINTERFACE_HID, 0, 0, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT);
     if (hDevInfo == INVALID_HANDLE_VALUE) 
         return GetLastError();
@@ -344,8 +384,8 @@ int try_load_devices(){
 
 int main(){
     printf("hello world\n");
-    cout << "reponse code: " << try_load_devices() << "\n";
-    cout << "ending process...\n";
+    try_load_devices();
+    cout << "\nending process...\n";
 }
 
 
