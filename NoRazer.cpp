@@ -34,24 +34,8 @@
 using namespace std;
 
 
-#pragma pack(push, 1)
-struct razer_rgb_data {
-    struct RGB {
-        unsigned char R;
-        unsigned char B;
-        unsigned char G;};
-    unsigned short unk0x00      =  0;
-    unsigned short unk0x02      = 31;
-    unsigned short unk0x04      =  0;
-    unsigned char  unk0x06[3]   = {0x47,0x0F,0x03};
-    unsigned short unk0x09      =  0;
-    unsigned short column_index =  0; // USER SET
-    unsigned short key_count    =  0; // USER SET
-    unsigned short unk0x0F      =  0;
-    RGB            keys[24];
-    unsigned short unk0x59      =  0; // seems kinda like a checksum of sorts
-};
-#pragma pack(pop)
+#include "RazerDevice.cpp"
+
 
 bool SendDataToDevice(HANDLE device, DWORD dwIoControlCode, LPVOID lpInBuffer, DWORD nInBufferSize, LPVOID lpOutBuffer, DWORD nOutBufferSize, DWORD* bytes_returned, LPOVERLAPPED lpOverlapped){
 
@@ -178,13 +162,10 @@ device_path_data digest_device_path(LPCWSTR device_path) {
 DEFINE_GUID(GUID_DEVINTERFACE_RAZER, 0xE3BE005DL, 0xD130, 0x4910, 0x88, 0xff, 0x09, 0xae, 0x02, 0xf6, 0x80, 0xe9);
 DEFINE_DEVPROPKEY(DEVPKEY_Device_ContainerId, 0x8c7ed206, 0x3f8a, 0x4827, 0xb3, 0xab, 0xae, 0x9e, 0x1f, 0xae, 0xfc, 0x6c, 2);     // DEVPROP_TYPE_GUID
 DEFINE_DEVPROPKEY(DEVPKEY_Device_BusReportedDeviceDesc, 0x540b947e, 0x8b40, 0x45bc, 0xa8, 0xa2, 0x6a, 0x0b, 0x89, 0x4c, 0xbd, 0xa2, 4);     // DEVPROP_TYPE_STRING
-int find_parent_usb_device(int target_vid, int target_pid, PBYTE property_buffer) {
+wstring HID_get_name_from_parent(int target_vid, int target_pid) {
     HDEVINFO hDevInfo = SetupDiGetClassDevsW(&GUID_DEVINTERFACE_USB_DEVICE, 0, 0, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT);
-    if (hDevInfo == INVALID_HANDLE_VALUE)
-        return GetLastError();
-
-    int device_index = 0;
-    while (device_index++, true) {
+    if (hDevInfo == INVALID_HANDLE_VALUE) return wstring(L"ERROR: ENUMERATION FAILED");
+    for (int device_index = 0;; device_index++) {
         SP_DEVICE_INTERFACE_DATA interfaceData = {};
         interfaceData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
         if (!SetupDiEnumDeviceInterfaces(hDevInfo, 0, &GUID_DEVINTERFACE_USB_DEVICE, device_index, &interfaceData))
@@ -198,24 +179,20 @@ int find_parent_usb_device(int target_vid, int target_pid, PBYTE property_buffer
         interface_detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
         if (!SetupDiGetDeviceInterfaceDetailW(hDevInfo, &interfaceData, interface_detail_data, 0x20e, 0, 0))
             continue;
-
         // we're looking for a deivce that has a matching vid & pid
         auto interface_path_data = digest_device_path(interface_detail_data->DevicePath);
         if (interface_path_data.vid != target_vid && interface_path_data.vid != target_pid)
             continue;
-
+        BYTE property_buffer[0x200] = {0};
         DEVPROPTYPE property_type = 0;
         DWORD required_size = 0;
         if (!SetupDiGetDevicePropertyW(hDevInfo, &devinfo_data, &DEVPKEY_Device_BusReportedDeviceDesc, &property_type, property_buffer, 0x200, &required_size, 0))
-        {
-            // GET DETAILS; RETURN THEM;
-        }
-
-        return 0; // success
+            return wstring(L"ERROR: PROPERTY GET FAILED");
+        return wstring((LPWSTR)property_buffer);
     }
-    return 621; // not an actual error, its just so we can track whats going on
+    return wstring(L"ERROR: NO MATCHING DEVICE");
 }
-HANDLE find_device_driver(int target_vid, int target_pid) {
+HANDLE HID_find_device_driver(int target_vid, int target_pid) {
     HDEVINFO hDevInfo = SetupDiGetClassDevsW(&GUID_DEVINTERFACE_RAZER, 0, 0, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT);
     if (hDevInfo == INVALID_HANDLE_VALUE)
         return (HANDLE) - 1;
@@ -283,38 +260,55 @@ int try_load_devices(){
         auto interface_path_data = digest_device_path(interface_detail_data->DevicePath);
         if (interface_path_data.vid != 0x1532 && interface_path_data.vid != 0x6e8) continue; 
 
-        BYTE parent_property_buffer[0x200] = {0};
-        int parent_result = find_parent_usb_device(interface_path_data.vid, interface_path_data.pid, parent_property_buffer);
+        wcout << L"\nfound device: " << HID_get_name_from_parent(interface_path_data.vid, interface_path_data.pid);
 
-        wcout << L"\nfound device: " << wstring((LPWSTR)parent_property_buffer);
-
-        HANDLE driver_handle = find_device_driver(interface_path_data.vid, interface_path_data.vid);
+        HANDLE driver_handle = HID_find_device_driver(interface_path_data.vid, interface_path_data.vid);
         if (driver_handle == (HANDLE)-1)
             continue; // couldn't find driver;
 
+        razer_blackwidow::device_blackwidow* created_device;
+        try {
+            created_device = new razer_blackwidow::device_blackwidow();
+        }
+        catch (exception ex) {
+            cout << ex.what();
+            return 0;
+        }
 
-        unsigned char color_index = 0;
-        razer_rgb_data rgb_data_obj = {};
-        rgb_data_obj.column_index = 0;
-        rgb_data_obj.key_count = 21;
-        int col_index = 0;
+        float current = 0.0f;
         for (;;) {
-            // color in keys
-            for (int i = 0; i < rgb_data_obj.key_count; i++) {
-                rgb_data_obj.keys[i].R = 0;
-                rgb_data_obj.keys[i].G = color_index;
-                rgb_data_obj.keys[i].B = 0;
-                color_index += 1; // naturally overflows back to 0
+            // basic pattern to make colors increment and reset
+            for (int row = 0; row < created_device->row_count; row++) {
+                int cycle = 0;
+                for (int col = 0; col < created_device->keys[row].size; col++) {
+                    // set RGB floats??
+                    auto rgb_val = created_device->GetKey(row, col);
+                    //rgb_val.R += 0.034 * ((col+1.0f) / 4.0f);
+                    //if (rgb_val.R >= 1.0f) rgb_val.R = 0.0f;
+                    rgb_val.R = 0.0f;
+                    rgb_val.G = 0.0f;
+                    rgb_val.B = 0.0f;
+                    if (cycle == 0)
+                         rgb_val.R = 1.0f;
+                    else if (cycle == 1)
+                         rgb_val.G = 1.0f;
+                    else rgb_val.B = 1.0f;
+
+
+                    created_device->SetKey(row, col, rgb_val);
+
+                    cycle++;
+                    if(cycle >= 3) cycle = 0;
+                }
+
+                DWORD bytes_returned = 0;
+                razer_rgb_data* debug_test = &created_device->data_buffers[row];
+                //SendDataToDevice(driver_handle, 0x88883014, 0, 0, 0, 0, &bytes_returned, 0);
+                SendDataToDevice(driver_handle, 0x88883140, 0, 0, 0, 0, &bytes_returned, 0);
+                SendDataToDevice(driver_handle, 0x88883010, &created_device->data_buffers[row], sizeof(razer_rgb_data), 0, 0, &bytes_returned, 0);
+                Sleep(50);
             }
-
-            DWORD bytes_returned = 0;
-            //SendDataToDevice(driver_handle, 0x88883014, 0, 0, 0, 0, &bytes_returned, 0);
-            SendDataToDevice(driver_handle, 0x88883140, 0, 0, 0, 0, &bytes_returned, 0);
-            SendDataToDevice(driver_handle, 0x88883010, &rgb_data_obj, sizeof(rgb_data_obj), 0, 0, &bytes_returned, 0);
-
-            Sleep(300);
-            rgb_data_obj.column_index++;
-            if (rgb_data_obj.column_index > 5) rgb_data_obj.column_index = 0;
+            current += 0.075;
         }
 
         // console log found driver for device: device name

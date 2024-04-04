@@ -18,5 +18,11 @@
     <ClCompile Include="NoRazer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="RazerDevice.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HelperFuncs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
