@@ -132,7 +132,14 @@
   <ItemGroup>
     <ClCompile Include="HelperFuncs.cpp" />
     <ClCompile Include="NoRazer.cpp" />
-    <ClCompile Include="RazerDevice.cpp" />
+    <ClInclude Include="DeviceInterface.h" />
+    <ClInclude Include="Devices\DeviceTemplate.h" />
+    <ClInclude Include="RazerIO.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Devices\BlackWidow.h" />
+    <ClInclude Include="Devices\Goliathus.h" />
+    <ClInclude Include="Devices\TartarusV2.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

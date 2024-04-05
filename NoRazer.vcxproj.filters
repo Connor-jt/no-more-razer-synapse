@@ -18,11 +18,28 @@
     <ClCompile Include="NoRazer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RazerDevice.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="HelperFuncs.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Devices\BlackWidow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Devices\TartarusV2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Devices\Goliathus.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Devices\DeviceTemplate.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RazerIO.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DeviceInterface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
