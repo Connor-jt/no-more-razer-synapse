@@ -222,20 +222,11 @@ HANDLE HID_find_device_driver(int target_vid, int target_pid) {
 }
 
 
-int try_load_devices(){
-    
-    /*HANDLE device_handle = CreateFileW(L"\\\\?\\rzcontrol#vid_1532&pid_0241&mi_00#8&288536a0&0#{e3be005d-d130-4910-88ff-09ae02f680e9}", 0, 3, (LPSECURITY_ATTRIBUTES)0x0, 3, 0x40000000, (HANDLE)0x0);
-    if (device_handle == (HANDLE)-1)
-    {
-        char breakpoint_test = 0;
-    }*/
-    //return 0;
-
-
+void try_load_devices(){
 
     HDEVINFO hDevInfo = SetupDiGetClassDevsW(&GUID_DEVINTERFACE_HID, 0, 0, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT);
     if (hDevInfo == INVALID_HANDLE_VALUE) 
-        return GetLastError();
+        return;
 
     // iterate all razer HID devices
     for (int device_index = 0;; device_index++) {
@@ -266,13 +257,20 @@ int try_load_devices(){
         if (driver_handle == (HANDLE)-1)
             continue; // couldn't find driver;
 
+        struct device_object {
+            int pid;
+            wstring name;
+            HANDLE driver_handle;
+            razer_device device;
+        };
+
         razer_blackwidow::device_blackwidow* created_device;
         try {
             created_device = new razer_blackwidow::device_blackwidow();
         }
         catch (exception ex) {
             cout << ex.what();
-            return 0;
+            return;
         }
 
         float current = 0.0f;
@@ -281,6 +279,8 @@ int try_load_devices(){
             for (int row = 0; row < created_device->row_count; row++) {
                 int cycle = 0;
                 for (int col = 0; col < created_device->keys[row].size; col++) {
+                    if (created_device->keys[row].ptr[col] == NONE) 
+                        continue;
                     // set RGB floats??
                     auto rgb_val = created_device->GetKey(row, col);
                     //rgb_val.R += 0.034 * ((col+1.0f) / 4.0f);
@@ -313,65 +313,7 @@ int try_load_devices(){
 
         // console log found driver for device: device name
     }
-    return 0;
-
-    // //////////////////////////// //
-    // PART 2 OF THE 2ND TEST !!!! //
-    // ////////////////////////// //
-   
-    // HID\VID_1532&PID_0241&MI_01&COL01\7&31628AA2&0&0000
-    //const wchar_t* devicePath = L"\\\\?\\hid#vid_1532&pid_0241&mi_01&col01#7&31628aa2&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}\\kbd";
-    //// Step 1: Open a handle to the USB device
-
-    //HANDLE device_handle = CreateFileW(devicePath, 0, 3, (LPSECURITY_ATTRIBUTES)0x0, 3, 0x40000000, (HANDLE)0x0);
-    ////HANDLE hDevice = CreateFile(devicePath, 0, 3, NULL, OPEN_EXISTING, 0x40000000, NULL);
-    //if (device_handle == INVALID_HANDLE_VALUE) {
-    //    cerr << "Error opening device handle. Error code: " << GetLastError() << endl;
-    //    return 1;}
-
-    //// Step 2: Issue IOCTL_USB_GET_DESCRIPTOR_FROM_NODE_CONNECTION
-    //USB_NODE_CONNECTION_INFORMATION_EX_V2 connectionInfo = {};
-    //DWORD bytesReturned = 0;
-    //BOOL success = DeviceIoControl(device_handle, IOCTL_USB_GET_DESCRIPTOR_FROM_NODE_CONNECTION,
-    //    &connectionInfo, sizeof(connectionInfo),
-    //    &connectionInfo, sizeof(connectionInfo),
-    //    &bytesReturned, NULL);
-
-    //if (!success) {
-    //    cerr << "Error retrieving descriptor. Error code: " << GetLastError() << endl;
-    //    CloseHandle(device_handle);
-    //    return 1;}
-    //// Step 3: Access the device descriptor
-    ///*USB_DEVICE_DESCRIPTOR deviceDescriptor = connectionInfo.DeviceDescriptor;
-    //cout << "USB Device Descriptor:" << endl;
-    //cout << "Vendor ID: 0x" << hex << deviceDescriptor.idVendor << endl;
-    //cout << "Product ID: 0x" << hex << deviceDescriptor.idProduct << endl;*/
-    //// Add other relevant fields as needed
-    //CloseHandle(device_handle);
-    // -------------------------------------------------------------------------------------
-
-
-    //contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_0241&mi_00#7&89cfb0b&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}\\kbd")); // keyboard
-    //contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_0241&mi_02#7&1e326e64&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}")); // keyboard
-    //contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_0241&mi_01&col01#7&31628aa2&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}\\kbd")); // keyboard
-    //contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_0241&mi_01&col02#7&31628aa2&0&0001#{4d1e55b2-f16f-11cf-88cb-001111000030}")); // keyboard
-    //contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_0241&mi_01&col03#7&31628aa2&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}")); // keyboard
-    //contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_0241&mi_01&col04#7&31628aa2&0&0003#{4d1e55b2-f16f-11cf-88cb-001111000030}")); // keyboard
-    //contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_0241&mi_01&col05#7&31628aa2&0&0004#{4d1e55b2-f16f-11cf-88cb-001111000030}")); // keyboard
-    /*contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_022b&mi_00#7&3a630f46&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}\\kbd"));
-    contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_022b&mi_01&col02#7&2a901eea&0&0001#{4d1e55b2-f16f-11cf-88cb-001111000030}"));
-    contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_022b&mi_01&col03#7&2a901eea&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}"));
-    contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_022b&mi_01&col04#7&2a901eea&0&0003#{4d1e55b2-f16f-11cf-88cb-001111000030}"));
-    contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_022b&mi_01&col05#7&2a901eea&0&0004#{4d1e55b2-f16f-11cf-88cb-001111000030}"));
-    contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_022b&mi_02#7&6b8e128&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}"));
-    contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_022b&mi_00&col02#8&dca0e7a&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}"));
-    contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_022b&mi_01&col01#7&2a901eea&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}\\kbd"));
-    contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_022b&mi_00&col03&col01#8&3120b189&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}"));
-    contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_022b&mi_00&col03&col02#8&3120b189&0&0001#{4d1e55b2-f16f-11cf-88cb-001111000030}"));
-    contact_device(LoadDevice(L"\\\\?\\hid#vid_1532&pid_0241&mi_00&col03#8&5ac5cba&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}"));*/
-    // ------------------------------------------------------------------------------------
-
-
+    return;
 }
 
 int main(){

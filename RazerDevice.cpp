@@ -2,6 +2,7 @@
 #include "HelperFuncs.cpp"
 
 static enum KeyID : unsigned char {
+	NONE = 0,
 	SPACE = ' ',
 	APOS = '\'',
 	COMMA = ',',
@@ -204,12 +205,12 @@ public:
 };
 
 namespace razer_blackwidow {
-	const char row1[] = {ESC,F1,F2,F3,F4,F5,F6,F7,F8,F9,F10,F11,F12,PRTSC,SCRLK,BREAK};
+	const char row1[] = {ESC,NONE,F1,F2,F3,F4,F5,F6,F7,F8,F9,F10,F11,F12,PRTSC,SCRLK,BREAK};
 	const char row2[] = {TILDE,_1,_2,_3,_4,_5,_6,_7,_8,_9,_0,MINUS,EQUALS,BACKSPACE,INS,HOME,PUP,NUM_LK,NUM_FSLASH,NUM_ASTRICKS,NUM_MINUS};
 	const char row3[] = {TAB,Q,W,E,R,T,Y,U,I,O,P,LBRACKET,RBRACKET,BSLASH,DEL,END,PDOWN,NUM_7,NUM_8,NUM_9,NUM_PLUS};
-	const char row4[] = {CAPS,A,S,D,F,G,H,J,K,L,SEMI,APOS,ENTER,NUM_4,NUM_5,NUM_6};
-	const char row5[] = {LSHIFT,Z,X,C,V,B,N,M,COMMA,PERIOD,FSLASH,RSHIFT,UP,NUM_1,NUM_2,NUM_3,NUM_ENTER};
-	const char row6[] = {LCTRL,WINDOWS,LALT,SPACE,RALT,FN,MENU,RCTRL,LEFT,DOWN,RIGHT,NUM_0,NUM_DEL};
+	const char row4[] = {CAPS,A,S,D,F,G,H,J,K,L,SEMI,APOS,NONE,ENTER,NONE,NONE,NONE,NUM_4,NUM_5,NUM_6};
+	const char row5[] = {LSHIFT,NONE,Z,X,C,V,B,N,M,COMMA,PERIOD,FSLASH,NONE,RSHIFT,NONE,UP,NONE,NUM_1,NUM_2,NUM_3,NUM_ENTER};
+	const char row6[] = {LCTRL,WINDOWS,LALT,NONE,NONE,SPACE,NONE,NONE,NONE,RALT,NONE,FN,MENU,RCTRL,LEFT,DOWN,RIGHT,NONE,NUM_0,NUM_DEL};
 	static keyboard_row rows[6] = {keyboard_row{sizeof(row1),row1},
 								   keyboard_row{sizeof(row2),row2},
 								   keyboard_row{sizeof(row3),row3},
@@ -227,21 +228,21 @@ namespace razer_blackwidow {
 		key_position GetKeyPosition(KeyID key) override {
 			switch (key) {
 			case ESC:			return key_position{ 0, 0 };
-			case F1:			return key_position{ 0, 1 };
-			case F2:			return key_position{ 0, 2 };
-			case F3:			return key_position{ 0, 3 };
-			case F4:			return key_position{ 0, 4 };
-			case F5:			return key_position{ 0, 5 };
-			case F6:			return key_position{ 0, 6 };
-			case F7:			return key_position{ 0, 7 };
-			case F8:			return key_position{ 0, 8 };
-			case F9:			return key_position{ 0, 9 };
-			case F10:			return key_position{ 0,10 };
-			case F11:			return key_position{ 0,11 };
-			case F12:			return key_position{ 0,12 };
-			case PRTSC:			return key_position{ 0,13 };
-			case SCRLK:			return key_position{ 0,14 };
-			case BREAK:			return key_position{ 0,15 };
+			case F1:			return key_position{ 0, 2 };
+			case F2:			return key_position{ 0, 3 };
+			case F3:			return key_position{ 0, 4 };
+			case F4:			return key_position{ 0, 5 };
+			case F5:			return key_position{ 0, 6 };
+			case F6:			return key_position{ 0, 7 };
+			case F7:			return key_position{ 0, 8 };
+			case F8:			return key_position{ 0, 9 };
+			case F9:			return key_position{ 0,10 };
+			case F10:			return key_position{ 0,11 };
+			case F11:			return key_position{ 0,12 };
+			case F12:			return key_position{ 0,13 };
+			case PRTSC:			return key_position{ 0,14 };
+			case SCRLK:			return key_position{ 0,15 };
+			case BREAK:			return key_position{ 0,16 };
 			case TILDE:			return key_position{ 1, 0 };
 			case _1:			return key_position{ 1, 1 };
 			case _2:			return key_position{ 1, 2 };
@@ -296,40 +297,40 @@ namespace razer_blackwidow {
 			case L:				return key_position{ 3, 9 };
 			case SEMI:			return key_position{ 3,10 };
 			case APOS:			return key_position{ 3,11 };
-			case ENTER:			return key_position{ 3,12 };
-			case NUM_4:			return key_position{ 3,13 };
-			case NUM_5:			return key_position{ 3,14 };
-			case NUM_6:			return key_position{ 3,15 };
+			case ENTER:			return key_position{ 3,13 };
+			case NUM_4:			return key_position{ 3,17 };
+			case NUM_5:			return key_position{ 3,18 };
+			case NUM_6:			return key_position{ 3,19 };
 			case LSHIFT:		return key_position{ 4, 0 };
-			case Z:				return key_position{ 4, 1 };
-			case X:				return key_position{ 4, 2 };
-			case C:				return key_position{ 4, 3 };
-			case V:				return key_position{ 4, 4 };
-			case B:				return key_position{ 4, 5 };
-			case N:				return key_position{ 4, 6 };
-			case M:				return key_position{ 4, 7 };
-			case COMMA:			return key_position{ 4, 8 };
-			case PERIOD:		return key_position{ 4, 9 };
-			case FSLASH:		return key_position{ 4,10 };
-			case RSHIFT:		return key_position{ 4,11 };
-			case UP:			return key_position{ 4,12 };
-			case NUM_1:			return key_position{ 4,13 };
-			case NUM_2:			return key_position{ 4,14 };
-			case NUM_3:			return key_position{ 4,15 };
-			case NUM_ENTER:		return key_position{ 4,16 };
+			case Z:				return key_position{ 4, 2 };
+			case X:				return key_position{ 4, 3 };
+			case C:				return key_position{ 4, 4 };
+			case V:				return key_position{ 4, 5 };
+			case B:				return key_position{ 4, 6 };
+			case N:				return key_position{ 4, 7 };
+			case M:				return key_position{ 4, 8 };
+			case COMMA:			return key_position{ 4, 9 };
+			case PERIOD:		return key_position{ 4,10 };
+			case FSLASH:		return key_position{ 4,11 };
+			case RSHIFT:		return key_position{ 4,13 };
+			case UP:			return key_position{ 4,15 };
+			case NUM_1:			return key_position{ 4,17 };
+			case NUM_2:			return key_position{ 4,18 };
+			case NUM_3:			return key_position{ 4,19 };
+			case NUM_ENTER:		return key_position{ 4,20 };
 			case LCTRL:			return key_position{ 5, 0 };
 			case WINDOWS:		return key_position{ 5, 1 };
 			case LALT:			return key_position{ 5, 2 };
-			case SPACE:			return key_position{ 5, 3 };
-			case RALT:			return key_position{ 5, 4 };
-			case FN:			return key_position{ 5, 5 };
-			case MENU:			return key_position{ 5, 6 };
-			case RCTRL:			return key_position{ 5, 7 };
-			case LEFT:			return key_position{ 5, 8 };
-			case DOWN:			return key_position{ 5, 9 };
-			case RIGHT:			return key_position{ 5,10 };
-			case NUM_0:			return key_position{ 5,11 };
-			case NUM_DEL:		return key_position{ 5,12 };
+			case SPACE:			return key_position{ 5, 5 };
+			case RALT:			return key_position{ 5, 9 };
+			case FN:			return key_position{ 5,11 };
+			case MENU:			return key_position{ 5,12 };
+			case RCTRL:			return key_position{ 5,13 };
+			case LEFT:			return key_position{ 5,14 };
+			case DOWN:			return key_position{ 5,15 };
+			case RIGHT:			return key_position{ 5,16 };
+			case NUM_0:			return key_position{ 5,18 };
+			case NUM_DEL:		return key_position{ 5,19 };
 			} return key_position{ -1,-1 };
 		}
 	};
