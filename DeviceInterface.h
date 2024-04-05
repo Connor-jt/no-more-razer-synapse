@@ -9,13 +9,13 @@ namespace RazerDeviceManagement {
 	using namespace razer_goliathus;
 	
 
-	static enum supported_devices {
-		golaithus = 0,
-		blackwidow = 1,
-		tartarusv2 = 2,
-	};
-	static void instaniate_device(){
-
+	static razer_device* instaniate_device(int pid){
+		switch (pid) {
+		case 0x1542: return new razer_blackwidow::device_blackwidow();
+		case 0x0001: return new razer_tartarusv2::device_tartarusv2();
+		//case 0x0002: return new razer_goliathus::device_blackwidow();
+		default: return (razer_device*)-1;
+		}
 	}
 	
 }

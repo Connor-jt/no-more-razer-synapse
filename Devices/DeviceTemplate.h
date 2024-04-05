@@ -142,10 +142,11 @@ public:
 		unk0x06[0] = 0x47; unk0x06[1] = 0x0F; unk0x06[2] = 0x03;
 		unk0x09 = 0;
 		row_index = index;
-		key_count = col_count;
-		unk0x0F = 0;
-		for (int i = 0; i < 24; i++) keys[i] = RGB{ 0,0,0 };
-		unk0x59 = 0;
+		unk0x0C = 0;
+		last_key_index = col_count;
+		for (int i = 0; i < 25; i++) keys[i] = RGB{ 0,0,0 };
+		checksum = 0;
+		unk0x5A = 0;
 	}
 	void pack_RGB(RGB_float value, int col) {
 		if (col < 0 || col > last_key_index) throw std::exception("bad column index!!");
