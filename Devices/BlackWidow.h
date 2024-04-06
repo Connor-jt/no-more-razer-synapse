@@ -20,6 +20,8 @@ namespace razer_blackwidow {
 		device_blackwidow() {
 			row_count = 6;
 			keys = rows;
+			device_id_byte = 0x47;
+			last_key_index = 0x15;
 			init();
 		}
 		key_position GetKeyPosition(KeyID key) override {

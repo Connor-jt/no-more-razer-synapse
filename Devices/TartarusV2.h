@@ -16,6 +16,8 @@ namespace razer_tartarusv2 {
 		device_tartarusv2() {
 			row_count = 4;
 			keys = rows;
+			device_id_byte = 0x17;
+			last_key_index = 0x5;
 			init();
 		}
 		key_position GetKeyPosition(KeyID key) override {

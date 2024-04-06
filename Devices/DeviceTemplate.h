@@ -122,37 +122,40 @@ private:
 		unsigned char R;
 		unsigned char G;
 		unsigned char B;};
-	unsigned short unk0x00;
-	unsigned short unk0x02;
-	unsigned short unk0x04;
-	unsigned char  unk0x06[3];
-	unsigned short unk0x09;
-	unsigned char  row_index;
-	unsigned char  unk0x0C;
-	unsigned char  last_key_index;
-	RGB            keys[25];
-	// not included in checksuming process
-	unsigned char  checksum; 
-	unsigned char  unk0x5A;
+	unsigned short unk0x00;		// 00 00
+	unsigned short unk0x02;		// 1f 00
+	unsigned short unk0x04;		// 00 00
+	unsigned char  device_id;	// ??
+	unsigned char  unk0x07;		// 0F
+	unsigned char  unk0x08;		// 03
+	unsigned short unk0x09;		// 00 00
+	unsigned char  row_index;	// ??
+	unsigned char  unk0x0C;		// 00
+	unsigned char  last_key_index; // ??
+	RGB            zones[25];
+	unsigned char  checksum;	// ??
+	unsigned char  unk0x5A;		// 00
 public:
-	void init(int index, int col_count) { // just to set the mem
+	void init(int index, int col_count, char dev_byte) { // just to set the mem
 		unk0x00 = 0;
 		unk0x02 = 31;
 		unk0x04 = 0;
-		unk0x06[0] = 0x47; unk0x06[1] = 0x0F; unk0x06[2] = 0x03;
+		device_id = dev_byte;
+		unk0x07 = 0x0F; 
+		unk0x08 = 0x03;
 		unk0x09 = 0;
 		row_index = index;
 		unk0x0C = 0;
 		last_key_index = col_count;
-		for (int i = 0; i < 25; i++) keys[i] = RGB{ 0,0,0 };
+		for (int i = 0; i < 25; i++) zones[i] = RGB{ 0,0,0 };
 		checksum = 0;
 		unk0x5A = 0;
 	}
 	void pack_RGB(RGB_float value, int col) {
 		if (col < 0 || col > last_key_index) throw std::exception("bad column index!!");
-		keys[col].R = roundf(clamp1(value.R) * 255.0f);
-		keys[col].G = roundf(clamp1(value.G) * 255.0f);
-		keys[col].B = roundf(clamp1(value.B) * 255.0f);
+		zones[col].R = roundf(clamp1(value.R) * 255.0f);
+		zones[col].G = roundf(clamp1(value.G) * 255.0f);
+		zones[col].B = roundf(clamp1(value.B) * 255.0f);
 	}
 	void set_checksum() {
 		checksum = 0;
@@ -162,23 +165,23 @@ public:
 	}
 };
 #pragma pack(pop)
-
-
-
 class razer_device {
 private:
 	void VerifyKeyPos(int row, int col) {
 		if (row < 0 || row >= row_count) throw std::exception("bad row index!!");
 		if (col < 0 || col >= keys[row].size) throw std::exception("bad column index!!");
 	}
+protected:
+	char device_id_byte = 0;
+	char last_key_index = 0;
 public:
 	void init() {	// ONLY CALL ONCE, NOT LOCKED after first call
-		if (keys == nullptr || row_count == 0) throw std::exception("inheritance failure!!");
+		if (keys == nullptr || row_count == 0 || device_id_byte == 0 || last_key_index == 0) throw std::exception("inheritance failure!!");
 
 		// malloc data buffers by amount of rows
 		data_buffers = new razer_rgb_data[row_count];
 		for (int i = 0; i < row_count; i++)
-			data_buffers[i].init(i, keys[i].size);
+			data_buffers[i].init(i, last_key_index, device_id_byte);
 		
 		// malloc rgb array and then each entry (as well as set )
 		RGB_values = new RGB_float*[row_count];

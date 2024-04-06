@@ -27,6 +27,7 @@
 
 #include <vector>
 #include <string>
+#include <unordered_map>
 using namespace std;
 
 namespace RazerIO {
@@ -36,7 +37,7 @@ namespace RazerIO {
         BOOL device_output;
         DWORD lpBytesReturned;
 
-
+        // TODO: NEEDS CLUTTER CLEARING
         HANDLE thread_event = 0x0;
         if (lpOverlapped == (LPOVERLAPPED)0x0) {
             thread_event = CreateEventW((LPSECURITY_ATTRIBUTES)0x0, 1, 0, (LPCWSTR)0x0);
@@ -87,14 +88,14 @@ namespace RazerIO {
         vector<wstring> result = {};
         int section_index = 0;
         int section_chars_begin_index = 0;
-        for (int index = 0; index < source.size(); index++) {
-            wchar_t current_char = source[index];
-            if (current_char == '&') {
+        for (int index = 0; index < source.size()+1; index++) {
+            if (index == source.size() || source[index] == '&') {
                 result.push_back(source.substr(section_chars_begin_index, index - section_chars_begin_index));
                 section_chars_begin_index = index + 1;
                 section_index++;
             }
         }
+        // and then push whatever was left after the last &
         return result;
     }
     struct device_path_data {
@@ -140,14 +141,14 @@ namespace RazerIO {
                 result.col.push_back(stoi(curr_string.substr(3), nullptr, 16));
         }}
         // iterate through hardware ids and map them
-        {   vector<wstring> physical_ids = separate_device_descriptor(hardware_ids);
-        for (int i = 0; i < physical_ids.size(); i++) {
-            switch (i) {
-            case 0: result.hwid1 = stoi(physical_ids[i], nullptr, 16); break;
-            case 1: result.hwid2 = stoi(physical_ids[i], nullptr, 16); break;
-            case 2: result.hwid3 = stoi(physical_ids[i], nullptr, 16); break;
-            case 3: result.hwid4 = stoi(physical_ids[i], nullptr, 16); break;
-            }
+        if (hardware_ids != L"null") { // for some reason some devices have 'null' for their hwid section
+            vector<wstring> physical_ids = separate_device_descriptor(hardware_ids);
+            for (int i = 0; i < physical_ids.size(); i++) {
+                switch (i) {
+                case 0: result.hwid1 = stoi(physical_ids[i], nullptr, 16); break;
+                case 1: result.hwid2 = stoi(physical_ids[i], nullptr, 16); break;
+                case 2: result.hwid3 = stoi(physical_ids[i], nullptr, 16); break;
+                case 3: result.hwid4 = stoi(physical_ids[i], nullptr, 16); break;}
         }}
         return result;
     }
@@ -175,7 +176,7 @@ namespace RazerIO {
                 continue;
             // we're looking for a deivce that has a matching vid & pid
             auto interface_path_data = digest_device_path(interface_detail_data->DevicePath);
-            if (interface_path_data.vid != target_vid && interface_path_data.vid != target_pid)
+            if (interface_path_data.vid != target_vid || interface_path_data.pid != target_pid)
                 continue;
             BYTE property_buffer[0x200] = { 0 };
             DEVPROPTYPE property_type = 0;
@@ -219,9 +220,11 @@ namespace RazerIO {
     struct discovered_device {
         int pid;
         wstring name;
+        wstring path;
         HANDLE driver_handle;
     };
     vector<discovered_device> try_load_devices() {
+        std::unordered_map<int, bool> discovered_pids = {}; // possibly faster than a 'set'
         vector<discovered_device> results = {};
         HDEVINFO hDevInfo = SetupDiGetClassDevsW(&GUID_DEVINTERFACE_HID, 0, 0, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT);
         if (hDevInfo == INVALID_HANDLE_VALUE)
@@ -244,6 +247,10 @@ namespace RazerIO {
             // check for razer vendor id, skip any that aren't razer
             auto interface_path_data = digest_device_path(interface_detail_data->DevicePath);
             if (interface_path_data.vid != 0x1532 && interface_path_data.vid != 0x6e8) continue;
+            // skip device if we already found one with the same PID, as we dont actually use any data from this device, only the driver
+            if (discovered_pids.find(interface_path_data.pid) != discovered_pids.end())
+                continue;
+            discovered_pids[interface_path_data.pid] = true;
 
             wstring device_name = HID_get_name_from_parent(interface_path_data.vid, interface_path_data.pid);
             HANDLE driver_handle = HID_find_device_driver(interface_path_data.vid, interface_path_data.vid);
@@ -252,7 +259,7 @@ namespace RazerIO {
                 continue;}
 
             wcout << L"\nFound device with driver: " << device_name;
-            results.push_back(discovered_device{ interface_path_data.pid, device_name, driver_handle });
+            results.push_back(discovered_device{ interface_path_data.pid, device_name, wstring(interface_detail_data->DevicePath), driver_handle });
         }
         return results;
     }
