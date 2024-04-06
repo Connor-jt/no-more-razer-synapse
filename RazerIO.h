@@ -101,7 +101,7 @@ namespace RazerIO {
     struct device_path_data {
         int vid, pid, mi = 0;
         vector<int> col = {};
-        int hwid1, hwid2, hwid3, hwid4 = 0;
+        long long hwid1, hwid2, hwid3, hwid4 = 0;
         wstring class_guid;
     };
     device_path_data digest_device_path(LPCWSTR device_path) {
@@ -145,10 +145,10 @@ namespace RazerIO {
             vector<wstring> physical_ids = separate_device_descriptor(hardware_ids);
             for (int i = 0; i < physical_ids.size(); i++) {
                 switch (i) {
-                case 0: result.hwid1 = stoi(physical_ids[i], nullptr, 16); break;
-                case 1: result.hwid2 = stoi(physical_ids[i], nullptr, 16); break;
-                case 2: result.hwid3 = stoi(physical_ids[i], nullptr, 16); break;
-                case 3: result.hwid4 = stoi(physical_ids[i], nullptr, 16); break;}
+                case 0: result.hwid1 = stoll(physical_ids[i], nullptr, 16); break;
+                case 1: result.hwid2 = stoll(physical_ids[i], nullptr, 16); break;
+                case 2: result.hwid3 = stoll(physical_ids[i], nullptr, 16); break;
+                case 3: result.hwid4 = stoll(physical_ids[i], nullptr, 16); break;}
         }}
         return result;
     }
@@ -208,7 +208,7 @@ namespace RazerIO {
                 continue;
             // then test if this driver matches our razer device
             auto interface_path_data = digest_device_path(interface_detail_data->DevicePath);
-            if (interface_path_data.vid != target_vid && interface_path_data.vid != target_pid)
+            if (interface_path_data.vid != target_vid || interface_path_data.pid != target_pid)
                 continue;
             // map device and pass handle back
             return CreateFileW(interface_detail_data->DevicePath, 0, 3, (LPSECURITY_ATTRIBUTES)0x0, 3, 0x40000000, (HANDLE)0x0);
@@ -253,7 +253,7 @@ namespace RazerIO {
             discovered_pids[interface_path_data.pid] = true;
 
             wstring device_name = HID_get_name_from_parent(interface_path_data.vid, interface_path_data.pid);
-            HANDLE driver_handle = HID_find_device_driver(interface_path_data.vid, interface_path_data.vid);
+            HANDLE driver_handle = HID_find_device_driver(interface_path_data.vid, interface_path_data.pid);
             if (driver_handle == (HANDLE)-1) {
                 wcout << L"\nFound device without driver: " << device_name;
                 continue;}

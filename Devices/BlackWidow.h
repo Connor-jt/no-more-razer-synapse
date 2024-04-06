@@ -130,7 +130,8 @@ namespace razer_blackwidow {
 			case RIGHT:			return key_position{ 5,17 };
 			case NUM_0:			return key_position{ 5,19 };
 			case NUM_DEL:		return key_position{ 5,20 };
-			} return key_position{ -1,-1 };
+			default:			key_position{ -1,-1 };
+			} 
 		}
 	};
 }

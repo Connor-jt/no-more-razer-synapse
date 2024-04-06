@@ -43,7 +43,8 @@ namespace razer_tartarusv2 {
 			case C:			return key_position{ 3, 3 };
 			case WHEEL:		return key_position{ 3, 4 };
 			case SPACE:		return key_position{ 3, 5 };
-			} return key_position{ -1,-1 };
+			default:		key_position{ -1,-1 };
+			}
 		}
 	};
 }

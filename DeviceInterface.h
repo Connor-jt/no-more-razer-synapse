@@ -11,9 +11,9 @@ namespace RazerDeviceManagement {
 
 	static razer_device* instaniate_device(int pid){
 		switch (pid) {
-		case 0x1542: return new razer_blackwidow::device_blackwidow();
-		case 0x0001: return new razer_tartarusv2::device_tartarusv2();
-		//case 0x0002: return new razer_goliathus::device_blackwidow();
+		case 0x241: return new razer_blackwidow::device_blackwidow();
+		case 0x22b: return new razer_tartarusv2::device_tartarusv2();
+        case 0xc02: return new razer_goliathus::device_goliathus();
 		default: return (razer_device*)-1;
 		}
 	}

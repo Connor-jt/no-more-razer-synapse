@@ -108,7 +108,9 @@ static enum KeyID : unsigned char {
 	NUM_8,
 	NUM_9,
 	ENTER,
-	WHEEL,
+	WHEEL, // keypad mouse wheel
+	ZONE1, // mouse mat zone
+
 };
 
 
@@ -176,7 +178,7 @@ protected:
 	char last_key_index = 0;
 public:
 	void init() {	// ONLY CALL ONCE, NOT LOCKED after first call
-		if (keys == nullptr || row_count == 0 || device_id_byte == 0 || last_key_index == 0) throw std::exception("inheritance failure!!");
+		if (keys == nullptr || row_count == 0 || device_id_byte == 0) throw std::exception("inheritance failure!!");
 
 		// malloc data buffers by amount of rows
 		data_buffers = new razer_rgb_data[row_count];
