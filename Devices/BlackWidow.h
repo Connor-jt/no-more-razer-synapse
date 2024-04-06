@@ -2,12 +2,13 @@
 #include "DeviceTemplate.h"
 namespace razer_blackwidow {
 	using namespace RazerDevice;
+	// razer logo is ZONE1
 	const char row1[] = { NONE,ESC,NONE,F1,F2,F3,F4,F5,F6,F7,F8,F9,F10,F11,F12,PRTSC,SCRLK,BREAK };
 	const char row2[] = { NONE,TILDE,_1,_2,_3,_4,_5,_6,_7,_8,_9,_0,MINUS,EQUALS,BACKSPACE,INS,HOME,PUP,NUM_LK,NUM_FSLASH,NUM_ASTRICKS,NUM_MINUS };
 	const char row3[] = { NONE,TAB,Q,W,E,R,T,Y,U,I,O,P,LBRACKET,RBRACKET,BSLASH,DEL,END,PDOWN,NUM_7,NUM_8,NUM_9,NUM_PLUS };
 	const char row4[] = { NONE,CAPS,A,S,D,F,G,H,J,K,L,SEMI,APOS,NONE,ENTER,NONE,NONE,NONE,NUM_4,NUM_5,NUM_6 };
 	const char row5[] = { NONE,LSHIFT,NONE,Z,X,C,V,B,N,M,COMMA,PERIOD,FSLASH,NONE,RSHIFT,NONE,UP,NONE,NUM_1,NUM_2,NUM_3,NUM_ENTER };
-	const char row6[] = { NONE,LCTRL,WINDOWS,LALT,NONE,NONE,SPACE,NONE,NONE,NONE,RALT,NONE,FN,MENU,RCTRL,LEFT,DOWN,RIGHT,NONE,NUM_0,NUM_DEL };
+	const char row6[] = { NONE,LCTRL,WINDOWS,LALT,NONE,NONE,SPACE,NONE,NONE,NONE,RALT,ZONE1,FN,MENU,RCTRL,LEFT,DOWN,RIGHT,NONE,NUM_0,NUM_DEL };
 	static keyboard_row rows[6] = {keyboard_row{sizeof(row1),row1},
 								   keyboard_row{sizeof(row2),row2},
 								   keyboard_row{sizeof(row3),row3},
@@ -20,7 +21,7 @@ namespace razer_blackwidow {
 		device_blackwidow() {
 			row_count = 6;
 			keys = rows;
-			device_id_byte = 0x47;
+			device_packet_size = 0x47;
 			last_key_index = 0x15;
 			init();
 		}
@@ -130,7 +131,7 @@ namespace razer_blackwidow {
 			case RIGHT:			return key_position{ 5,17 };
 			case NUM_0:			return key_position{ 5,19 };
 			case NUM_DEL:		return key_position{ 5,20 };
-			default:			key_position{ -1,-1 };
+			default:		    return key_position{-1,-1 };
 			} 
 		}
 	};

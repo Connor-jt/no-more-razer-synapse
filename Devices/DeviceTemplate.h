@@ -124,46 +124,61 @@ private:
 		unsigned char R;
 		unsigned char G;
 		unsigned char B;};
-	unsigned short unk0x00;		// 00 00
-	unsigned short unk0x02;		// 1f 00
-	unsigned short unk0x04;		// 00 00
-	unsigned char  device_id;	// ??
+	unsigned char  unk0x00;		// 00
+	unsigned char  unk0x01;		// 00
+	unsigned char  unk0x02;		// 1f
+	// below is checksum'd
+	unsigned char  unk0x03;		// 00
+	unsigned char  unk0x04;		// 00
+	unsigned char  unk0x05;		// 00
+	unsigned char  packet_size;	// ??
 	unsigned char  unk0x07;		// 0F
-	unsigned char  unk0x08;		// 03
+	unsigned char  packet_type; // ?? (03 for lighting input, 02 for disable lighting)
+	// sub structure (packet)
 	unsigned short unk0x09;		// 00 00
 	unsigned char  row_index;	// ??
 	unsigned char  unk0x0C;		// 00
 	unsigned char  last_key_index; // ??
 	RGB            zones[25];
+	// footer packet data
 	unsigned char  checksum;	// ??
 	unsigned char  unk0x5A;		// 00
 public:
-	void init(int index, int col_count, char dev_byte) { // just to set the mem
+	void init(int index, int col_count, char device_packet_size) { // just to set the mem
+		// signature
 		unk0x00 = 0;
+		unk0x01 = 0;
 		unk0x02 = 31;
+		// packet header
+		unk0x03 = 0;
 		unk0x04 = 0;
-		device_id = dev_byte;
+		unk0x05 = 0;
+		packet_size = device_packet_size;
 		unk0x07 = 0x0F; 
-		unk0x08 = 0x03;
+		packet_type = 0x03;
+		// packet
 		unk0x09 = 0;
 		row_index = index;
 		unk0x0C = 0;
 		last_key_index = col_count;
 		for (int i = 0; i < 25; i++) zones[i] = RGB{ 0,0,0 };
-		checksum = 0;
-		unk0x5A = 0;
-	}
-	void pack_RGB(RGB_float value, int col) {
-		if (col < 0 || col > last_key_index) throw std::exception("bad column index!!");
-		zones[col].R = roundf(clamp1(value.R) * 255.0f);
-		zones[col].G = roundf(clamp1(value.G) * 255.0f);
-		zones[col].B = roundf(clamp1(value.B) * 255.0f);
-	}
-	void set_checksum() {
+		// calc checksum (potentially less optimizsed but is a very cool idea)
 		checksum = 0;
 		unsigned char* data_bytes = (unsigned char*)(this);
 		for (int index = 3; index < sizeof(razer_rgb_data) - 2; index++)
 			checksum ^= data_bytes[index];
+		unk0x5A = 0;
+	}
+	void pack_RGB(RGB_float value, int col) {
+		if (col < 0 || col > last_key_index) throw std::exception("bad column index!!");
+		// check out data from checksum
+		checksum ^= zones[col].R ^ zones[col].G ^ zones[col].B;
+		// apply new data
+		zones[col].R = roundf(clamp1(value.R) * 255.0f);
+		zones[col].G = roundf(clamp1(value.G) * 255.0f);
+		zones[col].B = roundf(clamp1(value.B) * 255.0f);
+		// check in new data
+		checksum ^= zones[col].R ^ zones[col].G ^ zones[col].B;
 	}
 };
 #pragma pack(pop)
@@ -174,16 +189,16 @@ private:
 		if (col < 0 || col >= keys[row].size) throw std::exception("bad column index!!");
 	}
 protected:
-	char device_id_byte = 0;
+	char device_packet_size = 0;
 	char last_key_index = 0;
 public:
 	void init() {	// ONLY CALL ONCE, NOT LOCKED after first call
-		if (keys == nullptr || row_count == 0 || device_id_byte == 0) throw std::exception("inheritance failure!!");
+		if (keys == nullptr || row_count == 0 || device_packet_size == 0) throw std::exception("inheritance failure!!");
 
 		// malloc data buffers by amount of rows
 		data_buffers = new razer_rgb_data[row_count];
 		for (int i = 0; i < row_count; i++)
-			data_buffers[i].init(i, last_key_index, device_id_byte);
+			data_buffers[i].init(i, last_key_index, device_packet_size);
 		
 		// malloc rgb array and then each entry (as well as set )
 		RGB_values = new RGB_float*[row_count];
@@ -202,8 +217,8 @@ public:
 		delete[](RGB_values);
 	}
 
-	RGB_float** RGB_values; 
-	razer_rgb_data* data_buffers;
+	RGB_float** RGB_values = nullptr; 
+	razer_rgb_data* data_buffers = nullptr;
 	void SetKey(int row, int col, RGB_float value) {
 		VerifyKeyPos(row, col);
 		RGB_values[row][col] = value;
@@ -212,10 +227,6 @@ public:
 	RGB_float GetKey(int row, int col) {
 		VerifyKeyPos(row, col);
 		return RGB_values[row][col];
-	}
-	void SetChecksum(int row) { // called before sending if required by device
-		VerifyKeyPos(row, 0);
-		data_buffers[row].set_checksum();
 	}
 	// INHERITABLES //
 	int row_count = 0; // overwritten

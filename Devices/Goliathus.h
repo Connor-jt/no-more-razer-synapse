@@ -10,14 +10,14 @@ namespace razer_goliathus {
 		device_goliathus() {
 			row_count = 1;
 			keys = rows;
-			device_id_byte = 0x08;
+			device_packet_size = 0x08;
 			last_key_index = 0x0;
 			init();
 		}
 		key_position GetKeyPosition(KeyID key) override {
 			switch (key) {
 			case ZONE1:		return key_position{ 0, 0 };
-			default:		key_position{ -1,-1 };
+			default:		return key_position{-1,-1 };
 			}
 		}
 	};

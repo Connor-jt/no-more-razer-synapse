@@ -16,7 +16,7 @@ namespace razer_tartarusv2 {
 		device_tartarusv2() {
 			row_count = 4;
 			keys = rows;
-			device_id_byte = 0x17;
+			device_packet_size = 0x17;
 			last_key_index = 0x5;
 			init();
 		}
@@ -43,7 +43,7 @@ namespace razer_tartarusv2 {
 			case C:			return key_position{ 3, 3 };
 			case WHEEL:		return key_position{ 3, 4 };
 			case SPACE:		return key_position{ 3, 5 };
-			default:		key_position{ -1,-1 };
+			default:		return key_position{-1,-1 };
 			}
 		}
 	};
