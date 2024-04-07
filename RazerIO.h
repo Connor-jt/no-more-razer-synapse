@@ -56,9 +56,7 @@ namespace RazerIO {
                 goto LAB_1003a94b;
 
             if (last_error != 0x3e5) {
-                if (last_error == 1)
-                    return false;
-                else return true;
+                return false;
             }
 
 
@@ -223,8 +221,8 @@ namespace RazerIO {
         wstring path;
         HANDLE driver_handle;
     };
-    vector<discovered_device> try_load_devices() {
-        std::unordered_map<int, bool> discovered_pids = {}; // possibly faster than a 'set'
+    vector<discovered_device> try_load_devices() { // TODO: input for already loaded devices!!
+        std::unordered_map<int, bool> discovered_pids = {}; // possibly faster than a 'set<int>'
         vector<discovered_device> results = {};
         HDEVINFO hDevInfo = SetupDiGetClassDevsW(&GUID_DEVINTERFACE_HID, 0, 0, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT);
         if (hDevInfo == INVALID_HANDLE_VALUE)
@@ -255,10 +253,10 @@ namespace RazerIO {
             wstring device_name = HID_get_name_from_parent(interface_path_data.vid, interface_path_data.pid);
             HANDLE driver_handle = HID_find_device_driver(interface_path_data.vid, interface_path_data.pid);
             if (driver_handle == (HANDLE)-1) {
-                wcout << L"\nFound device without driver: " << device_name;
+                wcout << L"\nFound device without driver: " << device_name << L" PID: " << interface_path_data.pid;
                 continue;}
 
-            wcout << L"\nFound device with driver: " << device_name;
+            wcout << L"\nFound device with driver: " << device_name << L" PID: " << interface_path_data.pid;
             results.push_back(discovered_device{ interface_path_data.pid, device_name, wstring(interface_detail_data->DevicePath), driver_handle });
         }
         return results;

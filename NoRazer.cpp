@@ -34,7 +34,9 @@ int main(){
     int character_index = 0;
     int max_character_ticks = 15;
     int character_ticks = max_character_ticks;
-
+    // temp moving color thing
+    float curr_x = 0.0f;
+    float curr_y = 0.14f;
     for (;;) {
         for (int device_index = 0; device_index < devices.size(); device_index++) {
             auto curr_device = devices[device_index];
@@ -80,13 +82,13 @@ int main(){
                         new_val.G *= 0.1;
                         new_val.B *= 0.1;
                     }
-                    curr_device.device_data->SetKey(row, col, new_val);
+                    curr_device.device_data->SetKey(row, col, new_val, false);
                 }
             }
 
 
             // do word spelling pattern for keyboard
-            if (curr_device.device_details.pid == RazerDeviceManagement::BlackWidow) {
+            /*if (curr_device.device_details.pid == RazerDeviceManagement::BlackWidow) {
                 float current_key_color = (float)character_ticks / (float)max_character_ticks;
                 float next_key_color = 1.0f - current_key_color;
 
@@ -106,6 +108,10 @@ int main(){
                     character_ticks = max_character_ticks;
                     character_index = next_char_index;
                 }
+            }*/
+            if (curr_device.device_details.pid == RazerDeviceManagement::BlackWidow) {
+                curr_device.device_data->PaintAt(curr_x, curr_y, RazerDevice::RGB_float{ 1.0f, 1.0f, 1.0f }, true);
+                curr_x += 0.007f;
             }
 
             // then push changes
@@ -128,14 +134,16 @@ int main(){
     for (int i = 0; i < devices.size(); i++) {
         auto curr_device = devices[i];
         DWORD bytes_returned = 0;
+        // keep an explicit list of things that this byte sequence is confirmed to be compatible with
         switch (curr_device.device_details.pid) {
         case RazerDeviceManagement::TartarusV2:
         case RazerDeviceManagement::BlackWidow:
-        case RazerDeviceManagement::GoliathusE: {
+        case RazerDeviceManagement::GoliathusE:
             char doody[] = { 0x00,0x00,0x1F,0x00,0x00,0x00,0x06,0x0F,0x02,0x01,0x00,0x03,0x00,0x28,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x21,0x00 };
+            RazerIO::SendDataToDevice(curr_device.device_details.driver_handle, 0x88883140, 0, 0, 0, 0, &bytes_returned, 0); 
             RazerIO::SendDataToDevice(curr_device.device_details.driver_handle, 0x88883010, doody, sizeof(doody), 0, 0, &bytes_returned, 0);
             wcout << L"\nUnloaded device: " << curr_device.device_details.name;
-            break;}
+            break;
         }
     }
 
