@@ -220,9 +220,13 @@ namespace RazerIO {
         wstring name;
         wstring path;
         HANDLE driver_handle;
+        HANDLE hid_alivecheck_handle;
     };
-    vector<discovered_device> try_load_devices() { // TODO: input for already loaded devices!!
+    vector<discovered_device> try_load_devices(vector<int> ignore_pids) { // TODO: input for already loaded devices!!
         std::unordered_map<int, bool> discovered_pids = {}; // possibly faster than a 'set<int>'
+        // add specified already found devices to pid filter list
+        for (int i = 0; i < ignore_pids.size(); i++) discovered_pids[ignore_pids[i]] = true;
+
         vector<discovered_device> results = {};
         HDEVINFO hDevInfo = SetupDiGetClassDevsW(&GUID_DEVINTERFACE_HID, 0, 0, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT);
         if (hDevInfo == INVALID_HANDLE_VALUE)
@@ -256,9 +260,20 @@ namespace RazerIO {
                 wcout << L"\nFound device without driver: " << device_name << L" PID: " << interface_path_data.pid;
                 continue;}
 
-            wcout << L"\nFound device with driver: " << device_name << L" PID: " << interface_path_data.pid;
-            results.push_back(discovered_device{ interface_path_data.pid, device_name, wstring(interface_detail_data->DevicePath), driver_handle });
+            HANDLE hid_device_handle = CreateFileW(interface_detail_data->DevicePath, 0, 3, (LPSECURITY_ATTRIBUTES)0x0, 3, 0x40000000, (HANDLE)0x0);
+            if (hid_device_handle == (HANDLE)-1) {
+                CloseHandle(driver_handle); // cleanup
+                wcout << L"\nFound device with driver, but failed to get HID handle: " << device_name << L" PID: " << interface_path_data.pid;
+                continue;}
+
+            wcout << L"\nSuccessfully loaded device: " << device_name << L" PID: " << interface_path_data.pid;
+            results.push_back(discovered_device{ interface_path_data.pid, device_name, wstring(interface_detail_data->DevicePath), driver_handle,hid_device_handle });
         }
         return results;
+    }
+    bool HandleAliveCheck(HANDLE dev_handle) {
+        HIDD_ATTRIBUTES Attributes;
+        Attributes.Size = sizeof(Attributes);
+        return (HidD_GetAttributes(dev_handle, &Attributes) != 0);
     }
 }
