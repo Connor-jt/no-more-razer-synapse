@@ -134,6 +134,7 @@
     <ClCompile Include="NoRazer.cpp" />
     <ClInclude Include="DeviceInterface.h" />
     <ClInclude Include="Devices\DeviceTemplate.h" />
+    <ClInclude Include="Effects\EffectsTemplate.h" />
     <ClInclude Include="RazerIO.h" />
   </ItemGroup>
   <ItemGroup>

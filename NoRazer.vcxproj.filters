@@ -41,5 +41,8 @@
     <ClInclude Include="DeviceInterface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Effects\EffectsTemplate.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
