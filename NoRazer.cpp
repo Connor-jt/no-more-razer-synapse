@@ -29,7 +29,7 @@ int main(){
             auto curr_device = device_manager.devices[device_index];
             curr_device->DoEffects();
             curr_device->PostData();
-            Sleep(50);
+            Sleep(20);
         }
     }
 

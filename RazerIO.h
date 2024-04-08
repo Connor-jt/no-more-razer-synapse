@@ -55,9 +55,9 @@ namespace RazerIO {
             if (last_error == 0xea) // 'More data is available'
                 goto LAB_1003a94b;
 
-            if (last_error != 0x3e5) {
+            if (last_error != 0x3e5)
                 return false;
-            }
+            
 
 
             // error is 'Overlapped I/O operation is in progress'

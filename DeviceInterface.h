@@ -37,15 +37,16 @@ namespace DeviceManagement {
             for (int row = 0; row < device_data->row_count; row++) {
                 // perform checksum
                 device_data->data_buffers[row].CalcChecksum();
-                RazerIO::SendDataToDevice(device_details.driver_handle, 0x88883140, 0, 0, 0, 0, &bytes_returned, 0); // no idea what this one actually does, but razer calls it super frequently
-                RazerIO::SendDataToDevice(device_details.driver_handle, 0x88883010, &device_data->data_buffers[row], sizeof(RazerDevice::razer_rgb_data), 0, 0, &bytes_returned, 0);
+                if (RazerIO::SendDataToDevice(device_details.driver_handle, 0x88883140, 0, 0, 0, 0, &bytes_returned, 0)); // no idea what this one actually does, but razer calls it super frequently
+                    RazerIO::SendDataToDevice(device_details.driver_handle, 0x88883010, &device_data->data_buffers[row], sizeof(RazerDevice::razer_rgb_data), 0, 0, &bytes_returned, 0);
+                Sleep(10); // needs a break inbetween packets? the devices seem to run very slowly when rows are sent one after another like this
             }
         }
-        void DisableLighting() {
+        void DisableLighting() { // TODO, make await for if send data to device fails
             DWORD bytes_returned = 0;
             // keep an explicit list of things that this byte sequence is confirmed to be compatible with
             switch (device_details.pid) {
-            case TartarusV2:
+            //case TartarusV2: // causes potentially adverse effects; my tartarusV2 seems to automatically turn of lighting when interfaced with razer synapse now??
             case BlackWidow:
             case GoliathusE:
                 char lights_off_packet[] = { 0x00,0x00,0x1F,0x00,0x00,0x00,0x06,0x0F,0x02,0x01,0x00,0x03,0x00,0x28,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x21,0x00 };
