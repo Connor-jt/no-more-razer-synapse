@@ -163,23 +163,24 @@ public:
 		unk0x0C = 0;
 		last_key_index = col_count;
 		for (int i = 0; i < 25; i++) zones[i] = RGB{ 0,0,0 };
-		// calc checksum (potentially less optimizsed but is a very cool idea)
-		checksum = 0;
-		unsigned char* data_bytes = (unsigned char*)(this);
-		for (int index = 3; index < sizeof(razer_rgb_data) - 2; index++)
-			checksum ^= data_bytes[index];
+		CalcChecksum();
 		unk0x5A = 0;
 	}
 	void pack_RGB(RGB_float value, int col) {
 		if (col < 0 || col > last_key_index) throw std::exception("bad column index!!");
-		// check out data from checksum
-		checksum ^= zones[col].R ^ zones[col].G ^ zones[col].B;
-		// apply new data
+		// check out data from checksum // just do a whole hash before submitting data!!
+		//checksum ^= zones[col].R ^ zones[col].G ^ zones[col].B;
 		zones[col].R = roundf(clamp1(value.R) * 255.0f);
 		zones[col].G = roundf(clamp1(value.G) * 255.0f);
 		zones[col].B = roundf(clamp1(value.B) * 255.0f);
 		// check in new data
-		checksum ^= zones[col].R ^ zones[col].G ^ zones[col].B;
+		//checksum ^= zones[col].R ^ zones[col].G ^ zones[col].B;
+	}
+	void CalcChecksum() {
+		checksum = 0;
+		unsigned char* data_bytes = (unsigned char*)(this);
+		for (int index = 3; index < sizeof(razer_rgb_data) - 2; index++)
+			checksum ^= data_bytes[index];
 	}
 };
 #pragma pack(pop)

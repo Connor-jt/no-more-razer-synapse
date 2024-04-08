@@ -36,6 +36,7 @@ namespace DeviceManagement {
             DWORD bytes_returned = 0;
             for (int row = 0; row < device_data->row_count; row++) {
                 // perform checksum
+                device_data->data_buffers[row].CalcChecksum();
                 RazerIO::SendDataToDevice(device_details.driver_handle, 0x88883140, 0, 0, 0, 0, &bytes_returned, 0); // no idea what this one actually does, but razer calls it super frequently
                 RazerIO::SendDataToDevice(device_details.driver_handle, 0x88883010, &device_data->data_buffers[row], sizeof(RazerDevice::razer_rgb_data), 0, 0, &bytes_returned, 0);
             }

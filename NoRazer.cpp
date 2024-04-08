@@ -9,8 +9,7 @@
 4. do spectrum cycling effect
 5. fix cleaning up data when shutting down device
 6. fix RGB packet IO functions making it super slow
-7. remove check in/out system and replace with original checksum before posting
-8. get proper device measurements
+7. get proper device measurements
 */
 
 static DeviceManagement::DeviceManager device_manager = {};
