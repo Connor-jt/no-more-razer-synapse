@@ -134,7 +134,12 @@
     <ClCompile Include="NoRazer.cpp" />
     <ClInclude Include="DeviceInterface.h" />
     <ClInclude Include="Devices\DeviceTemplate.h" />
+    <ClInclude Include="Effects\DebugWave.h" />
     <ClInclude Include="Effects\EffectsTemplate.h" />
+    <ClInclude Include="Effects\FlatCycle.h" />
+    <ClInclude Include="Effects\Pong.h" />
+    <ClInclude Include="Effects\Spelling.h" />
+    <ClInclude Include="Effects\Wave.h" />
     <ClInclude Include="RazerIO.h" />
   </ItemGroup>
   <ItemGroup>
