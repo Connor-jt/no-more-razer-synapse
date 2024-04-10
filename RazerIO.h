@@ -32,54 +32,29 @@ using namespace std;
 
 namespace RazerIO {
 
-    bool SendDataToDevice(HANDLE device, DWORD dwIoControlCode, LPVOID lpInBuffer, DWORD nInBufferSize, LPVOID lpOutBuffer, DWORD nOutBufferSize, DWORD* bytes_returned, LPOVERLAPPED lpOverlapped) {
+    bool SendDataToDevice(HANDLE device, DWORD dwIoControlCode, LPVOID lpInBuffer, DWORD nInBufferSize) {
+        OVERLAPPED overlap_data; 
+        memset(&overlap_data, 0, sizeof(OVERLAPPED));
+        overlap_data.hEvent = CreateEventW((LPSECURITY_ATTRIBUTES)0x0, 1, 0, (LPCWSTR)0x0);
+        if (overlap_data.hEvent == 0x0) return false; // failed to create thread
+        ResetEvent(overlap_data.hEvent);
 
-        BOOL device_output;
-        DWORD lpBytesReturned;
-
-        // TODO: NEEDS CLUTTER CLEARING
-        HANDLE thread_event = 0x0;
-        if (lpOverlapped == (LPOVERLAPPED)0x0) {
-            thread_event = CreateEventW((LPSECURITY_ATTRIBUTES)0x0, 1, 0, (LPCWSTR)0x0);
-            if (thread_event == 0x0) return false; // failed to create thread??
-
-            ResetEvent(thread_event);
-            // lpOverlapped = 0x0; // not sure how this is supposed to work? maybe the decompiler pulled some bad code
-        }
-
-
-        lpBytesReturned = 0;
-        device_output = DeviceIoControl(device, dwIoControlCode, lpInBuffer, nInBufferSize, lpOutBuffer, nOutBufferSize, &lpBytesReturned, lpOverlapped);
-        if (!device_output) {
+        DWORD lpBytesReturned = 0;
+        bool result = true;
+        if (!DeviceIoControl(device, dwIoControlCode, lpInBuffer, nInBufferSize, 0, 0, &lpBytesReturned, &overlap_data)) {
             DWORD last_error = GetLastError();
-            if (last_error == 0xea) // 'More data is available'
-                goto LAB_1003a94b;
-
-            if (last_error != 0x3e5)
-                return false;
-            
-
-
-            // error is 'Overlapped I/O operation is in progress'
-            // seems like this is all unimportant & could just be skipped !!!
-            if (!WaitForSingleObject(thread_event, 2000)) {
-                BOOL overlap_result = GetOverlappedResult(device, lpOverlapped, &lpBytesReturned, 0);
-                if (overlap_result != 0)
-                    goto LAB_1003a94b;
-            }
-            else {
-                // exception L"CHIDDriver::DeviceControl : TimeOut\n";
-                CancelIoEx(device, lpOverlapped);
-                GetOverlappedResult(device, lpOverlapped, &lpBytesReturned, 1);
-                // why dont we return 
-            }
-        }
-        else {
-        LAB_1003a94b:
-            if (bytes_returned != (DWORD*)0x0)
-                *bytes_returned = lpBytesReturned;
-        }
-        return true;
+            if (last_error != 0xea){ // if NOT error: 'More data is available'
+                if (last_error != 0x3e5) result = false; // if NOT error 'Overlapped I/O operation is in progress' then unaccounted failure
+                // await prev operation to complete
+                else if (WaitForSingleObject(overlap_data.hEvent, 2000)){ // if it timed out
+                    CancelIoEx(device, &overlap_data);
+                    GetOverlappedResult(device, &overlap_data, &lpBytesReturned, 1);
+                    result = false;
+                // didn't time out, but results depend on whether overlapped results were returned??
+                } else result = GetOverlappedResult(device, &overlap_data, &lpBytesReturned, 0);
+        }}
+        if (overlap_data.hEvent) CloseHandle(overlap_data.hEvent);
+        return result;
     }
 
     vector<wstring> separate_device_descriptor(const wstring source) {

@@ -2,7 +2,7 @@
 #include "Devices/BlackWidow.h"
 #include "Devices/TartarusV2.h"
 #include "Devices/Goliathus.h"
-#include "./Effects/EffectsTemplate.h"
+#include "./Effects/Effects.h"
 
 namespace DeviceManagement {
 	using namespace razer_blackwidow;
@@ -33,26 +33,29 @@ namespace DeviceManagement {
                 effects[i]->run();
         }
         void PostData() {
-            DWORD bytes_returned = 0;
             for (int row = 0; row < device_data->row_count; row++) {
                 // perform checksum
                 device_data->data_buffers[row].CalcChecksum();
-                if (RazerIO::SendDataToDevice(device_details.driver_handle, 0x88883140, 0, 0, 0, 0, &bytes_returned, 0)); // no idea what this one actually does, but razer calls it super frequently
-                    RazerIO::SendDataToDevice(device_details.driver_handle, 0x88883010, &device_data->data_buffers[row], sizeof(RazerDevice::razer_rgb_data), 0, 0, &bytes_returned, 0);
-                Sleep(10); // needs a break inbetween packets? the devices seem to run very slowly when rows are sent one after another like this
+                RazerIO::SendDataToDevice(device_details.driver_handle, 0x88883010, &device_data->data_buffers[row], sizeof(RazerDevice::razer_rgb_data));
+                RazerIO::SendDataToDevice(device_details.driver_handle, 0x88883140, 0, 0); // no idea what this one actually does
+                Sleep(2); // this is what razer seems to want us to wait between posts??
             }
         }
         void DisableLighting() { // TODO, make await for if send data to device fails
-            DWORD bytes_returned = 0;
             // keep an explicit list of things that this byte sequence is confirmed to be compatible with
+            // WARNING: causes potentially adverse effects; my tartarusV2 seems to automatically turn of lighting when interfaced with razer synapse now??
             switch (device_details.pid) {
-            //case TartarusV2: // causes potentially adverse effects; my tartarusV2 seems to automatically turn of lighting when interfaced with razer synapse now??
-            //case BlackWidow:
-            case GoliathusE:
+            case TartarusV2: 
+            case BlackWidow:{
+                char lights_off_packet[] = { 0x00,0x00,0x1F,0x00,0x00,0x00,0x06,0x0F,0x02,0x01,0x00,0x03,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x09,0x00 };
+                RazerIO::SendDataToDevice(device_details.driver_handle, 0x88883010, lights_off_packet, sizeof(lights_off_packet));
+                RazerIO::SendDataToDevice(device_details.driver_handle, 0x88883140, 0, 0);
+                break;}
+            case GoliathusE:{ // has one of the values set to '0x28' unlike the other two devices??
                 char lights_off_packet[] = { 0x00,0x00,0x1F,0x00,0x00,0x00,0x06,0x0F,0x02,0x01,0x00,0x03,0x00,0x28,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x21,0x00 };
-                RazerIO::SendDataToDevice(device_details.driver_handle, 0x88883140, 0, 0, 0, 0, &bytes_returned, 0);
-                RazerIO::SendDataToDevice(device_details.driver_handle, 0x88883010, lights_off_packet, sizeof(lights_off_packet), 0, 0, &bytes_returned, 0);
-                break;
+                RazerIO::SendDataToDevice(device_details.driver_handle, 0x88883010, lights_off_packet, sizeof(lights_off_packet));
+                RazerIO::SendDataToDevice(device_details.driver_handle, 0x88883140, 0, 0);
+                break;}
             }
         }
         ~LoadedDevice() { // turning off lighting is optional as this can be called after the device stops responding

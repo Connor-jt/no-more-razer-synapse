@@ -44,19 +44,22 @@
     <ClInclude Include="Effects\EffectsTemplate.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Effects\FlatCycle.h">
+    <ClInclude Include="Effects\Basic\FlatCycle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Effects\Wave.h">
+    <ClInclude Include="Effects\Basic\Wave.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Effects\DebugWave.h">
+    <ClInclude Include="Effects\Debug\DebugWave.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Effects\Pong.h">
+    <ClInclude Include="Effects\Basic\Pong.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Effects\Spelling.h">
+    <ClInclude Include="Effects\Basic\Spelling.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Effects\Effects.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
