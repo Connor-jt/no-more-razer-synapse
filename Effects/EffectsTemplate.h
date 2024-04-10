@@ -10,6 +10,7 @@ namespace RazerEffects {
 		razer_device* target_device = nullptr;
         RazerEffect() {};
 		bool IsAcceptedKey(KeyID id) {
+			if (id == NONE) return false;
 			int index = (unsigned char)id >> 3;
 			unsigned char bit_mask = 1 << ((unsigned char)id & 0b111);
 			bool test1 = (key_filters[index] & bit_mask);

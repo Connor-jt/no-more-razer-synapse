@@ -4,12 +4,11 @@
 
 /*// //// TODO //// ////
 1. function for when device un/plugged
-2. do smooth wave effect
+2. gradient thing for wave effect (split out as separate thing??)
 3. fix bounce effect
 4. do spectrum cycling effect
-5. fix cleaning up data when shutting down device
-6. fix RGB packet IO functions making it super slow
-7. get proper device measurements
+5. threading for multiple devices
+6. get proper device measurements
 */
 
 static DeviceManagement::DeviceManager device_manager = {};
@@ -21,9 +20,16 @@ int main(){
     auto found_devices = device_manager.RefreshDevices();
     for (int i = 0; i < found_devices.size(); i++) {
         auto curr_device = found_devices[i];
-        auto wave_effect = new RazerEffects::DebugWaveEffect{ curr_device->device_data };
-        wave_effect->SetFilters(keys_to_color, 4, true);
+
+        //auto wave_effect = new RazerEffects::DebugWaveEffect(curr_device->device_data);
+        //curr_device->effects.push_back(wave_effect);
+
+        auto wave_effect = new RazerEffects::WaveEffect(curr_device->device_data);
         curr_device->effects.push_back(wave_effect);
+        //auto static_effect = new RazerEffects::StaticEffect(curr_device->device_data, RGB_float{1.0f, 0.0f, 0.0f});
+        //static_effect->SetFilters(keys_to_color, 4, true);
+        //static_effect->SetFilterState(false);
+        //curr_device->effects.push_back(static_effect);
         //if (curr_device->device_details.pid == DeviceManagement::BlackWidow)
         //    curr_device->effects.push_back(new RazerEffects::BounceEffect{ curr_device->device_data });
     }

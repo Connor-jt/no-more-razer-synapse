@@ -117,7 +117,7 @@ static enum KeyID : unsigned char {
 struct keyboard_row { int size; const char* ptr; };
 struct key_position { int row; int col; };
 struct key_offset   { float x; float y; };
-struct RGB_float { float R; float G; float B; };
+struct RGB_float	{ float R; float G; float B; };
 #pragma pack(push, 1)
 struct razer_rgb_data {
 private:

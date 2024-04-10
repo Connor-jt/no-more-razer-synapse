@@ -5,3 +5,4 @@
 #include "Basic/Pong.h"
 #include "Basic/Spelling.h"
 #include "Basic/Wave.h"
+#include "Basic/Static.h"
