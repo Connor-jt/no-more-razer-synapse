@@ -19,7 +19,7 @@ namespace RazerEffects {
 		virtual void run() { throw new std::exception("unimplemented!!"); }
 		void SetFilter(KeyID id, bool state) {
 			int index = (unsigned char)id >> 3;
-			int bit_mask = 1 << ((unsigned char)id & 0b111);
+			unsigned char bit_mask = 1 << ((unsigned char)id & 0b111);
 			if (state) key_filters[index] |= bit_mask;
 			else	   key_filters[index] &= ~bit_mask;
 		}
