@@ -4,11 +4,12 @@
 
 /*// //// TODO //// ////
 1. function for when device un/plugged
-2. gradient thing for wave effect (split out as separate thing??)
-3. fix bounce effect
+2. finalize wave effect (adding in extra values and exposing them on creation)
+3. fix bounce effect??
 4. do spectrum cycling effect
-5. threading for multiple devices
+5. threading for multiple devices (otherwise the effects become very slow as the data passing functions likely perform a lot of waits and such)
 6. get proper device measurements
+7. use ownership percentage instead of simple additive boolean, for adding/setting RGB colors, this would be important for having anything underneath the wave effect
 */
 
 static DeviceManagement::DeviceManager device_manager = {};
@@ -41,7 +42,7 @@ int main(){
                 curr_device->DoEffects();
                 curr_device->PostData();
             }
-            //Sleep(20); // bit of rest time for the cpu
+            //Sleep(20); // bit of rest time for the cpu // enough is provided by the post data call i believe
         }
     }
 

@@ -1,6 +1,6 @@
 #pragma once
 #include <exception>
-#include "../HelperFuncs.cpp"
+#include "../HelperFuncs.h"
 namespace RazerDevice {
 static enum KeyID : unsigned char {
 	NONE = 0,

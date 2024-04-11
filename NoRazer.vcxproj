@@ -130,7 +130,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="HelperFuncs.cpp" />
+    <ClInclude Include="HelperFuncs.h" />
     <ClCompile Include="NoRazer.cpp" />
     <ClInclude Include="DeviceInterface.h" />
     <ClInclude Include="Devices\DeviceTemplate.h" />
