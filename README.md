@@ -12,3 +12,5 @@ for example, my tartarusV2 now seems to be slightly incompatible with the offici
 
 
 supported devices: Blackwidow Chroma, TartarusV2, Goliathus Extended
+
+also NOTE: this communicates using what i assume are the razer drivers, so i figure you need to at least have installed razer synapse previously for the drivers to allow this tool to function
