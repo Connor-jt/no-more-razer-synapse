@@ -43,7 +43,7 @@ namespace RazerEffects {
                 else if (direction == top_right)
                     direction = bot_right;
             }
-            const float speed = 0.02f;
+            const float speed = 0.01f;
             switch (direction) {
             case top_left:
                 curr_x -= speed;
@@ -62,7 +62,6 @@ namespace RazerEffects {
                 curr_y -= speed;
                 break;
             }
-
             target_device->PaintAt(curr_x, curr_y, RazerDevice::RGB_float{ 1.0f, 1.0f, 1.0f }, true);
         }
     };

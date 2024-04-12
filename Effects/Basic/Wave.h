@@ -3,6 +3,8 @@
 
 namespace RazerEffects {
     class WaveEffect :public RazerEffect {
+    private:
+        float current_grad_offset = 0.0f;
     public:
         WaveEffect(RazerDevice::razer_device* target) {
             target_device = target;
@@ -11,27 +13,27 @@ namespace RazerEffects {
         float effect_x = 0.38f;
         float effect_y = 0.12f;
         float angle = -45.0f;
+        float angle_speed = 4.9f;
         float thickness = 0.11;
 
         bool symmetrical = false;
         bool loop_gradients = true;
-        float current_grad_offset = 0.0f;
+        float speed = 0.06f;
 
         struct gradient {
             float offset;
-            RGB_float color;
-        };
+            RGB_float color;};
         vector<gradient> gradients = { gradient{0.0f, 1.0f, 0.0f, 0.0f}, gradient{0.25f, 0.0f, 1.0f, 0.0f}, gradient{0.5f, 1.0f, 0.0f, 0.0f} };
 
 
         void run() override {
             // custom: rotate gradient
-            angle = FloatAdditionClamp(angle, 4.9f);
+            if (angle_speed != 0.0f) angle = FloatAdditionClamp(angle, angle_speed);
             if (!gradients.size()) return; // dont do anything if we dont have any colors to set
             
             float furthest_offset = gradients[gradients.size() - 1].offset;
             // custom: shift gradient
-            current_grad_offset += 0.06f;
+            current_grad_offset += speed;
             if (current_grad_offset > furthest_offset)
                 current_grad_offset -= furthest_offset;
             else if (current_grad_offset < 0.0f)
@@ -103,6 +105,7 @@ namespace RazerEffects {
                         float distance_from_line = sqrt(pow(pos.x - intersect_x, 2.0f) + pow(pos.y - intersect_y, 2.0f));
                         float visibility = thickness - distance_from_line;
                         if (visibility < 0.0f) visibility = 0.0f;
+                        visibility /= thickness;
                         result.R *= visibility;
                         result.G *= visibility;
                         result.B *= visibility;

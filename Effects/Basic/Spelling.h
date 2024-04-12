@@ -7,11 +7,11 @@ namespace RazerEffects {
         SpellingEffect(RazerDevice::razer_device* target) { target_device = target; }
         // temp word effect thing
         int character_index = 0;
-        int max_character_ticks = 15;
+        int max_character_ticks = 5;
         int character_ticks = max_character_ticks;
         void run() override {
             // TODO: make static or something 
-            string sample_text = "Hello world! amongus imposter 100 burger king foot letuce 15 dollar fortnite card";
+            string sample_text = "Hello world! test message 0123456789";
             float current_key_color = (float)character_ticks / (float)max_character_ticks;
             float next_key_color = 1.0f - current_key_color;
 

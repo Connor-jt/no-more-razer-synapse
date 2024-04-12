@@ -203,7 +203,7 @@ private:
 		auto key_pos = GetKeyOffset(row, col);
 		if (isnan(key_pos.x)) return;
 		float distance = std::hypotf(abs(key_pos.x - origin_x), abs(key_pos.y - origin_y));
-		const float max_distance = 0.05f; // world units??? TODO: do something better with this
+		const float max_distance = 0.04f; // world units??? TODO: do something better with this
 		float clampped_dist = max_distance - distance;
 		if (clampped_dist <= 0.0f) return; // dont need to paint then
 		float color_strength = clampped_dist / max_distance;
